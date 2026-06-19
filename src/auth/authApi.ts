@@ -3,8 +3,19 @@ export interface LoginCredentials {
   password: string
 }
 
+export type UserRole = 'ADMIN' | 'SELLER'
+
+export interface AuthenticatedUser {
+  id: number
+  email: string
+  userName: string
+  role: UserRole
+  permissions: string[]
+}
+
 export interface LoginResponse {
   message: string
+  user: AuthenticatedUser
 }
 
 interface BackendErrorResponse {
@@ -74,4 +85,21 @@ export async function login(
   }
 
   return response.json() as Promise<LoginResponse>
+}
+
+export async function logout(): Promise<void> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/logout`, {
+      method: 'POST',
+      credentials: 'include',
+    })
+
+    if (!response.ok) {
+      throw new Error(formatBackendError(await readErrorBody(response)))
+    }
+  } catch {
+    throw new Error(
+      'Impossible de fermer la session pour le moment. Veuillez réessayer.',
+    )
+  }
 }
