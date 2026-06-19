@@ -24,7 +24,7 @@ interface BackendErrorResponse {
   statusCode?: number
 }
 
-const API_BASE_URL = (
+export const API_BASE_URL = (
   import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:3000'
 ).replace(/\/$/, '')
 

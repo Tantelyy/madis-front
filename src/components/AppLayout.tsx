@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
+import { canManageSuppliers } from '../auth/accessControl'
 import type { AuthenticatedUser } from '../auth/authApi'
 
 interface NavigationItem {
@@ -19,17 +20,26 @@ const navigationItems: readonly NavigationItem[] = [
     path: '/dashboard',
     icon: 'D',
   },
+  {
+    label: 'Fournisseurs',
+    path: '/suppliers',
+    icon: 'F',
+  },
 ]
 
 export function AppLayout({ user, onLogout }: AppLayoutProps) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true)
 
   if (!user) {
     return null
   }
 
+  const visibleNavigationItems = navigationItems.filter(
+    (item) => item.path !== '/suppliers' || canManageSuppliers(user),
+  )
+
   return (
-    <div className="min-h-screen bg-rose-50 text-slate-900">
+    <div className="min-h-screen bg-slate-50 text-slate-900">
       <div
         className={`fixed inset-0 z-30 bg-slate-950/40 transition-opacity lg:hidden ${
           isSidebarOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
@@ -39,25 +49,36 @@ export function AppLayout({ user, onLogout }: AppLayoutProps) {
       />
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-rose-100 bg-white shadow-xl shadow-rose-100/70 transition-transform duration-200 lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-slate-200 bg-white shadow-xl shadow-slate-200/70 transition-transform duration-200 ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         aria-label="Menu principal"
       >
-        <div className="flex h-20 items-center gap-3 border-b border-rose-100 px-6">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-100 text-xl font-bold text-rose-700">
+        <div className="flex h-20 items-center gap-3 border-b border-slate-200 px-6">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-100 text-xl font-bold text-teal-800">
             M
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <p className="text-base font-bold text-slate-950">Ma Distribution</p>
             <p className="text-xs font-medium text-slate-500">
               Gestion stock et vente
             </p>
           </div>
+          <button
+            type="button"
+            onClick={() => setIsSidebarOpen(false)}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-teal-700"
+            aria-label="Fermer le menu"
+            title="Fermer le menu"
+          >
+            <span className="text-lg leading-none" aria-hidden="true">
+              x
+            </span>
+          </button>
         </div>
 
         <nav className="flex-1 space-y-2 px-4 py-6">
-          {navigationItems.map((item) => (
+          {visibleNavigationItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
@@ -65,8 +86,8 @@ export function AppLayout({ user, onLogout }: AppLayoutProps) {
               className={({ isActive }) =>
                 `flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-semibold transition ${
                   isActive
-                    ? 'bg-rose-100 text-rose-800'
-                    : 'text-slate-600 hover:bg-rose-50 hover:text-rose-700'
+                    ? 'bg-teal-100 text-teal-900'
+                    : 'text-slate-600 hover:bg-teal-50 hover:text-teal-800'
                 }`
               }
             >
@@ -78,8 +99,8 @@ export function AppLayout({ user, onLogout }: AppLayoutProps) {
           ))}
         </nav>
 
-        <div className="border-t border-rose-100 p-4">
-          <div className="mb-4 rounded-lg bg-rose-50 px-4 py-3">
+        <div className="border-t border-slate-200 p-4">
+          <div className="mb-4 rounded-lg bg-slate-100 px-4 py-3">
             <p className="text-sm font-semibold text-slate-950">
               {user.userName}
             </p>
@@ -88,7 +109,7 @@ export function AppLayout({ user, onLogout }: AppLayoutProps) {
           <button
             type="button"
             onClick={onLogout}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-rose-200 bg-white px-4 py-3 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 focus:outline-none focus:ring-4 focus:ring-rose-100"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-teal-700 transition hover:bg-teal-50 focus:outline-none focus:ring-4 focus:ring-teal-100"
             aria-label="Se déconnecter"
             title="Se déconnecter"
           >
@@ -98,13 +119,20 @@ export function AppLayout({ user, onLogout }: AppLayoutProps) {
         </div>
       </aside>
 
-      <div className="lg:pl-72">
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-rose-100 bg-white/95 px-4 backdrop-blur sm:px-6 lg:px-8">
+      <div
+        className={`transition-[padding] duration-200 ${
+          isSidebarOpen ? 'lg:pl-72' : 'lg:pl-0'
+        }`}
+      >
+        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:px-6 lg:px-8">
           <button
             type="button"
             onClick={() => setIsSidebarOpen(true)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-rose-200 bg-white text-rose-700 shadow-sm lg:hidden"
+            className={`inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-teal-700 shadow-sm transition hover:bg-teal-50 ${
+              isSidebarOpen ? 'lg:invisible' : ''
+            }`}
             aria-label="Ouvrir le menu"
+            title="Ouvrir le menu"
           >
             <span className="text-xl leading-none" aria-hidden="true">
               ☰
@@ -112,7 +140,7 @@ export function AppLayout({ user, onLogout }: AppLayoutProps) {
           </button>
 
           <div className="ml-auto text-right">
-            <p className="text-xs font-semibold uppercase tracking-wide text-rose-500">
+            <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
               Backoffice
             </p>
             <p className="text-sm font-semibold text-slate-700">{user.role}</p>

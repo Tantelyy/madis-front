@@ -1,4 +1,5 @@
 import { Navigate, Outlet } from 'react-router-dom'
+import { canAccessBackoffice } from '../auth/accessControl'
 import type { AuthenticatedUser } from '../auth/authApi'
 
 interface AdminRouteProps {
@@ -6,7 +7,7 @@ interface AdminRouteProps {
 }
 
 export function AdminRoute({ user }: AdminRouteProps) {
-  if (user?.role !== 'ADMIN') {
+  if (!canAccessBackoffice(user)) {
     return <Navigate to="/login" replace />
   }
 
