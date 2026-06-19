@@ -32,10 +32,8 @@ export function LoginForm() {
     setIsSubmitting(true)
 
     try {
-      const tokens = await login(credentials)
-      localStorage.setItem('accessToken', tokens.accessToken)
-      localStorage.setItem('refreshToken', tokens.refreshToken)
-      setSuccessMessage('Connexion réussie.')
+      const response = await login(credentials)
+      setSuccessMessage(response.message)
     } catch (error) {
       setErrorMessage(
         error instanceof Error
