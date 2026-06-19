@@ -4,8 +4,7 @@ export interface LoginCredentials {
 }
 
 export interface LoginResponse {
-  accessToken: string
-  refreshToken: string
+  message: string
 }
 
 interface BackendErrorResponse {
@@ -58,6 +57,7 @@ export async function login(
   try {
     response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
       },
