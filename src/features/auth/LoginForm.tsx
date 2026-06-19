@@ -1,14 +1,22 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
-import { login, type LoginCredentials } from '../../auth/authApi'
+import {
+  login,
+  type AuthenticatedUser,
+  type LoginCredentials,
+} from '../../auth/authApi'
 import { Alert } from '../../components/Alert'
 import { TextField } from '../../components/TextField'
+
+interface LoginFormProps {
+  onLoginSuccess: (user: AuthenticatedUser) => void
+}
 
 const initialCredentials: LoginCredentials = {
   email: '',
   password: '',
 }
 
-export function LoginForm() {
+export function LoginForm({ onLoginSuccess }: LoginFormProps) {
   const [credentials, setCredentials] =
     useState<LoginCredentials>(initialCredentials)
   const [errorMessage, setErrorMessage] = useState<string>('')
@@ -34,6 +42,7 @@ export function LoginForm() {
     try {
       const response = await login(credentials)
       setSuccessMessage(response.message)
+      onLoginSuccess(response.user)
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -77,7 +86,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="flex w-full items-center justify-center rounded-lg bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-300 disabled:cursor-not-allowed disabled:bg-slate-400"
+        className="flex w-full items-center justify-center rounded-lg bg-rose-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700 focus:outline-none focus:ring-4 focus:ring-rose-200 disabled:cursor-not-allowed disabled:bg-rose-300"
       >
         {isSubmitting ? 'Connexion en cours...' : 'Se connecter'}
       </button>

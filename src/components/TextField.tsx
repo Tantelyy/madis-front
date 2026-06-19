@@ -37,7 +37,7 @@ export function TextField({
         placeholder={placeholder}
         required={required}
         onChange={onChange}
-        className="block w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-900 focus:ring-4 focus:ring-slate-200"
+        className="block w-full rounded-lg border border-rose-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-rose-500 focus:ring-4 focus:ring-rose-100"
       />
     </div>
   )
