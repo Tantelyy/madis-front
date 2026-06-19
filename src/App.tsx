@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { canAccessBackoffice } from './auth/accessControl'
 import { logout, type AuthenticatedUser } from './auth/authApi'
 import {
   clearStoredUser,
@@ -9,6 +10,7 @@ import {
 import { AppLayout } from './components/AppLayout'
 import { DashboardPage } from './pages/DashboardPage'
 import { LoginPage } from './pages/LoginPage'
+import { SuppliersPage } from './pages/SuppliersPage'
 import { AdminRoute } from './routes/AdminRoute'
 
 function App() {
@@ -18,7 +20,7 @@ function App() {
   )
 
   function handleLoginSuccess(user: AuthenticatedUser): void {
-    if (user.role === 'ADMIN') {
+    if (canAccessBackoffice(user)) {
       storeUser(user)
       setCurrentUser(user)
       navigate('/dashboard', { replace: true })
@@ -45,7 +47,7 @@ function App() {
       <Route
         path="/login"
         element={
-          currentUser?.role === 'ADMIN' ? (
+          canAccessBackoffice(currentUser) ? (
             <Navigate to="/dashboard" replace />
           ) : (
             <LoginPage onLoginSuccess={handleLoginSuccess} />
@@ -64,6 +66,7 @@ function App() {
           }
         >
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/suppliers" element={<SuppliersPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} />

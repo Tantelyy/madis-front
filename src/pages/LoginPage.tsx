@@ -7,11 +7,11 @@ interface LoginPageProps {
 
 export function LoginPage({ onLoginSuccess }: LoginPageProps) {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-rose-50 via-pink-50 to-sky-50 px-4 py-10 text-slate-900 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50 to-emerald-50 px-4 py-10 text-slate-900 sm:px-6 lg:px-8">
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-6xl items-center">
         <section className="grid w-full items-center gap-10 lg:grid-cols-[1fr_420px]">
           <div className="max-w-2xl">
-            <p className="mb-4 inline-flex rounded-full bg-rose-100 px-3 py-1 text-sm font-medium text-rose-700">
+            <p className="mb-4 inline-flex rounded-full bg-teal-100 px-3 py-1 text-sm font-medium text-teal-800">
               Espace sécurisé
             </p>
             <h1 className="text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl">
@@ -23,7 +23,7 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
             </p>
           </div>
 
-          <div className="rounded-2xl border border-rose-100 bg-white p-6 shadow-xl shadow-rose-100/70 sm:p-8">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/70 sm:p-8">
             <div className="mb-8">
               <h2 className="text-2xl font-semibold text-slate-950">
                 Connexion

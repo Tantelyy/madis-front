@@ -14,7 +14,7 @@ export function Pagination({
 
   return (
     <nav
-      className="flex flex-col gap-3 rounded-lg border border-rose-100 bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+      className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between"
       aria-label="Pagination"
     >
       <p className="text-sm font-medium text-slate-500">
@@ -25,7 +25,7 @@ export function Pagination({
           type="button"
           disabled={!canGoPrevious}
           onClick={() => onPageChange(currentPage - 1)}
-          className="rounded-lg border border-rose-200 px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-teal-700 transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Précédent
         </button>
@@ -33,7 +33,7 @@ export function Pagination({
           type="button"
           disabled={!canGoNext}
           onClick={() => onPageChange(currentPage + 1)}
-          className="rounded-lg border border-rose-200 px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-teal-700 transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Suivant
         </button>
