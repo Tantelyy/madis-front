@@ -34,7 +34,7 @@ export interface ListSuppliersParams {
   page: number
   limit: number
   search?: string
-  sortBy?: 'createdAt' | 'updatedAt' | 'deletedAt'
+  sortBy?: 'name' | 'createdAt' | 'updatedAt' | 'deletedAt'
   order?: 'asc' | 'desc'
 }
 

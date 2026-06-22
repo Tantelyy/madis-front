@@ -10,6 +10,8 @@ import {
 import { AppLayout } from './components/AppLayout'
 import { DashboardPage } from './pages/DashboardPage'
 import { LoginPage } from './pages/LoginPage'
+import { ProductReferentialsPage } from './pages/ProductReferentialsPage'
+import { ProductsPage } from './pages/ProductsPage'
 import { SuppliersPage } from './pages/SuppliersPage'
 import { AdminRoute } from './routes/AdminRoute'
 
@@ -67,6 +69,11 @@ function App() {
         >
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/suppliers" element={<SuppliersPage />} />
+          <Route path="/products" element={<ProductsPage />} />
+          <Route
+            path="/product-referentials"
+            element={<ProductReferentialsPage />}
+          />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} />

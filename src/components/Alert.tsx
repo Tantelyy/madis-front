@@ -12,7 +12,7 @@ export function Alert({ message, type }: AlertProps) {
   return (
     <p
       role={type === 'error' ? 'alert' : 'status'}
-      className={`rounded-lg border px-4 py-3 text-sm font-medium ${alertStyles[type]}`}
+      className={`inline-flex w-fit max-w-full rounded-lg border px-4 py-3 text-sm font-medium ${alertStyles[type]}`}
     >
       {message}
     </p>

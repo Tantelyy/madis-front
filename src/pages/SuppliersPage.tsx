@@ -25,7 +25,7 @@ type SupplierModalState =
 
 type SortableSupplierField = Extract<
   ListSuppliersParams['sortBy'],
-  'createdAt' | 'updatedAt'
+  'name' | 'createdAt' | 'updatedAt'
 >
 
 function formatDate(value: string | null): string {
@@ -75,9 +75,9 @@ export function SuppliersPage() {
       page,
       limit: PAGE_SIZE,
       search,
-        sortBy,
-        order: sortOrder,
-      })
+      sortBy,
+      order: sortOrder,
+    })
   }, [page, search, sortBy, sortOrder])
 
   function applySuppliersResponse(response: PaginatedSuppliers): void {
@@ -247,7 +247,7 @@ export function SuppliersPage() {
           value={search}
           onChange={handleSearchChange}
           placeholder="Nom, adresse, email ou téléphone"
-          className="mt-2 block w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-600 focus:ring-4 focus:ring-teal-100"
+          className="mt-2 block w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-600 focus:ring-4 focus:ring-teal-100 sm:w-[36rem]"
         />
       </div>
 
@@ -257,7 +257,14 @@ export function SuppliersPage() {
             <thead className="bg-slate-100">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
-                  Nom
+                  <button
+                    type="button"
+                    onClick={() => handleSort('name')}
+                    className="inline-flex items-center gap-1 transition hover:text-teal-700"
+                  >
+                    Nom
+                    <span aria-hidden="true">{getSortIndicator('name')}</span>
+                  </button>
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
                   Adresse
