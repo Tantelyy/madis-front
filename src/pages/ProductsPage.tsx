@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type ChangeEvent } from 'react'
 import { Alert } from '../components/Alert'
 import { Pagination } from '../components/Pagination'
 import { ProductCard } from '../features/products/ProductCard'
+import { ProductDetails } from '../features/products/ProductDetails'
 import { ProductForm } from '../features/products/ProductForm'
 import { ProductModal } from '../features/products/ProductModal'
 import {
@@ -25,7 +26,6 @@ import {
   type ProductPayload,
   type ProductSpecification,
   type ProductType,
-  type ProductUser,
 } from '../features/products/productsApi'
 
 const PAGE_SIZE = 12
@@ -40,29 +40,6 @@ type SortableProductField = Extract<
   ListProductsParams['sortBy'],
   'name' | 'reference' | 'createdAt' | 'updatedAt'
 >
-
-function formatDate(value: string | null): string {
-  if (!value) {
-    return '-'
-  }
-
-  return new Intl.DateTimeFormat('fr-FR', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value))
-}
-
-function displayValue(value: string | null | undefined): string {
-  return value?.trim() ? value : '-'
-}
-
-function formatUser(user: ProductUser | null | undefined): string {
-  if (!user) {
-    return '-'
-  }
-
-  return `${user.userName} (${user.email})`
-}
 
 interface SelectOption {
   id: number
@@ -394,56 +371,7 @@ export function ProductsPage() {
           title="Détails du produit"
           onClose={() => setModalState(null)}
         >
-          <dl className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Nom
-              </dt>
-              <dd className="mt-1 text-sm font-semibold text-slate-950">
-                {modalState.product.name}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Référence
-              </dt>
-              <dd className="mt-1 text-sm text-slate-700">
-                {modalState.product.reference}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Créé le
-              </dt>
-              <dd className="mt-1 text-sm text-slate-700">
-                {formatDate(modalState.product.createdAt)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Mis à jour le
-              </dt>
-              <dd className="mt-1 text-sm text-slate-700">
-                {formatDate(modalState.product.updatedAt)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Image
-              </dt>
-              <dd className="mt-1 text-sm text-slate-700">
-                {displayValue(modalState.product.image)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Créé par
-              </dt>
-              <dd className="mt-1 text-sm text-slate-700">
-                {formatUser(modalState.product.createdByUser)}
-              </dd>
-            </div>
-          </dl>
+          <ProductDetails product={modalState.product} />
         </ProductModal>
       ) : null}
 

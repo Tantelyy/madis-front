@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState, type ChangeEvent } from 'react'
 import { Alert } from '../components/Alert'
 import { Pagination } from '../components/Pagination'
+import { SupplierDetails } from '../features/suppliers/SupplierDetails'
 import { SupplierForm } from '../features/suppliers/SupplierForm'
 import { SupplierModal } from '../features/suppliers/SupplierModal'
+import { SuppliersTable } from '../features/suppliers/SuppliersTable'
 import {
   createSupplier,
   deleteSupplier,
@@ -12,7 +14,6 @@ import {
   type PaginatedSuppliers,
   type Supplier,
   type SupplierPayload,
-  type SupplierUser,
 } from '../features/suppliers/suppliersApi'
 
 const PAGE_SIZE = 10
@@ -27,29 +28,6 @@ type SortableSupplierField = Extract<
   ListSuppliersParams['sortBy'],
   'name' | 'createdAt' | 'updatedAt'
 >
-
-function formatDate(value: string | null): string {
-  if (!value) {
-    return '-'
-  }
-
-  return new Intl.DateTimeFormat('fr-FR', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value))
-}
-
-function displayValue(value: string | null): string {
-  return value?.trim() ? value : '-'
-}
-
-function formatUser(user: SupplierUser | null | undefined): string {
-  if (!user) {
-    return '-'
-  }
-
-  return `${user.userName} (${user.email})`
-}
 
 export function SuppliersPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
@@ -142,14 +120,6 @@ export function SuppliersPage() {
       sortBy === nextSortBy && currentSortOrder === 'desc' ? 'asc' : 'desc',
     )
     setSortBy(nextSortBy)
-  }
-
-  function getSortIndicator(field: SortableSupplierField): string {
-    if (sortBy !== field) {
-      return '↕'
-    }
-
-    return sortOrder === 'asc' ? '↑' : '↓'
   }
 
   async function handleSaveSupplier(payload: SupplierPayload): Promise<void> {
@@ -250,138 +220,16 @@ export function SuppliersPage() {
           className="mt-2 block w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-600 focus:ring-4 focus:ring-teal-100 sm:w-[36rem]"
         />
       </div>
-
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200">
-            <thead className="bg-slate-100">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
-                  <button
-                    type="button"
-                    onClick={() => handleSort('name')}
-                    className="inline-flex items-center gap-1 transition hover:text-teal-700"
-                  >
-                    Nom
-                    <span aria-hidden="true">{getSortIndicator('name')}</span>
-                  </button>
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
-                  Adresse
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
-                  Email
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
-                  Téléphone
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
-                  <button
-                    type="button"
-                    onClick={() => handleSort('createdAt')}
-                    className="inline-flex items-center gap-1 transition hover:text-teal-700"
-                  >
-                    Créé le
-                    <span aria-hidden="true">
-                      {getSortIndicator('createdAt')}
-                    </span>
-                  </button>
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
-                  <button
-                    type="button"
-                    onClick={() => handleSort('updatedAt')}
-                    className="inline-flex items-center gap-1 transition hover:text-teal-700"
-                  >
-                    Mis à jour le
-                    <span aria-hidden="true">
-                      {getSortIndicator('updatedAt')}
-                    </span>
-                  </button>
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {isLoading ? (
-                <tr>
-                  <td
-                    colSpan={7}
-                    className="px-4 py-10 text-center text-sm font-medium text-slate-500"
-                  >
-                    Chargement des fournisseurs...
-                  </td>
-                </tr>
-              ) : suppliers.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={7}
-                    className="px-4 py-10 text-center text-sm font-medium text-slate-500"
-                  >
-                    Aucun fournisseur enregistré pour le moment.
-                  </td>
-                </tr>
-              ) : (
-                suppliers.map((supplier) => (
-                  <tr key={supplier.id} className="hover:bg-teal-50/60">
-                    <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-950">
-                      {supplier.name}
-                    </td>
-                    <td className="px-4 py-4 text-sm text-slate-600">
-                      {displayValue(supplier.address)}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
-                      {displayValue(supplier.email)}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
-                      {displayValue(supplier.phone)}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
-                      {formatDate(supplier.createdAt)}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
-                      {formatDate(supplier.updatedAt)}
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setModalState({ type: 'details', supplier })
-                          }
-                          className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-teal-700 transition hover:bg-teal-50"
-                        >
-                          Détails
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setModalState({ type: 'form', supplier })
-                          }
-                          className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-teal-700 transition hover:bg-teal-50"
-                        >
-                          Modifier
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setModalState({ type: 'delete', supplier })
-                          }
-                          className="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-50"
-                        >
-                          Supprimer
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <SuppliersTable
+        suppliers={suppliers}
+        isLoading={isLoading}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSort={handleSort}
+        onDetails={(supplier) => setModalState({ type: 'details', supplier })}
+        onEdit={(supplier) => setModalState({ type: 'form', supplier })}
+        onDelete={(supplier) => setModalState({ type: 'delete', supplier })}
+      />
 
       {meta.totalPages > 1 ? (
         <div className="mt-auto">
@@ -398,73 +246,7 @@ export function SuppliersPage() {
           title="Détails du fournisseur"
           onClose={() => setModalState(null)}
         >
-          <dl className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Nom
-              </dt>
-              <dd className="mt-1 text-sm font-semibold text-slate-950">
-                {modalState.supplier.name}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Email
-              </dt>
-              <dd className="mt-1 text-sm text-slate-700">
-                {displayValue(modalState.supplier.email)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Téléphone
-              </dt>
-              <dd className="mt-1 text-sm text-slate-700">
-                {displayValue(modalState.supplier.phone)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Adresse
-              </dt>
-              <dd className="mt-1 text-sm text-slate-700">
-                {formatUser(modalState.supplier.createdByUser)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Créé le
-              </dt>
-              <dd className="mt-1 text-sm text-slate-700">
-                {formatDate(modalState.supplier.createdAt)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Mis à jour le
-              </dt>
-              <dd className="mt-1 text-sm text-slate-700">
-                {formatDate(modalState.supplier.updatedAt)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Créé par
-              </dt>
-              <dd className="mt-1 text-sm text-slate-700">
-                {formatUser(modalState.supplier.createdByUser)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">
-
-                Mis à jour par
-              </dt>
-              <dd className="mt-1 text-sm text-slate-700">
-                {formatUser(modalState.supplier.updatedByUser)}
-              </dd>
-            </div>
-          </dl>
+          <SupplierDetails supplier={modalState.supplier} />
         </SupplierModal>
       ) : null}
 
