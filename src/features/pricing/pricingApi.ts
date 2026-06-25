@@ -24,6 +24,17 @@ export interface PricingGrid {
   pricingRules: PricingRule[]
 }
 
+export interface PricingRulePayload {
+  minPurchasePrice: number
+  maxPurchasePrice: number
+  retailMarginPercent: number
+  wholesaleMarginPercent: number
+}
+
+export interface UpdatePricingGridPayload {
+  pricingRules: PricingRulePayload[]
+}
+
 interface BackendErrorResponse {
   message?: string | string[]
   error?: string
@@ -62,14 +73,19 @@ async function readErrorBody(response: Response): Promise<unknown> {
   }
 }
 
-async function requestJson<TResponse>(path: string): Promise<TResponse> {
+async function requestJson<TResponse>(
+  path: string,
+  init?: RequestInit,
+): Promise<TResponse> {
   let response: Response
 
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
       credentials: 'include',
+      ...init,
       headers: {
         'Content-Type': 'application/json',
+        ...init?.headers,
       },
     })
   } catch {
@@ -87,4 +103,13 @@ async function requestJson<TResponse>(path: string): Promise<TResponse> {
 
 export function getActivePricingGrid(): Promise<PricingGrid> {
   return requestJson<PricingGrid>('/pricing-grids/active')
+}
+
+export function updatePricingGrid(
+  payload: UpdatePricingGridPayload,
+): Promise<PricingGrid> {
+  return requestJson<PricingGrid>('/pricing-grids', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
 }

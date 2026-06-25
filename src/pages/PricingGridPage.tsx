@@ -1,42 +1,32 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Alert } from '../components/Alert'
+import { PricingGridTable } from '../features/pricing/PricingGridTable'
+import { formatDate } from '../features/pricing/pricingFormatters'
 import {
   getActivePricingGrid,
+  updatePricingGrid,
   type PricingGrid,
   type PricingRule,
 } from '../features/pricing/pricingApi'
-
-function formatDate(value: string | null): string {
-  if (!value) {
-    return '-'
-  }
-
-  return new Intl.DateTimeFormat('fr-FR', {
-    dateStyle: 'medium',
-  }).format(new Date(value))
-}
-
-function formatPrice(value: number): string {
-  return new Intl.NumberFormat('fr-FR', {
-    maximumFractionDigits: 0,
-  }).format(Math.round(value))
-}
-
-function formatDecimal(value: string): string {
-  return new Intl.NumberFormat('fr-FR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(Number(value))
-}
-
-function formatPercent(value: string): string {
-  return `${formatDecimal(value)} %`
-}
+import {
+  buildEditablePricingRules,
+  buildPricingRulePayload,
+  validatePricingRules,
+  type EditablePricingRule,
+  type EditablePricingRuleField,
+} from '../features/pricing/pricingRules'
 
 export function PricingGridPage() {
   const [pricingGrid, setPricingGrid] = useState<PricingGrid | null>(null)
+  const [editablePricingRules, setEditablePricingRules] = useState<
+    EditablePricingRule[]
+  >([])
+  const [nextEditableRuleId, setNextEditableRuleId] = useState<number>(1)
+  const [isEditing, setIsEditing] = useState<boolean>(false)
   const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [isSaving, setIsSaving] = useState<boolean>(false)
   const [errorMessage, setErrorMessage] = useState<string>('')
+  const [successMessage, setSuccessMessage] = useState<string>('')
 
   useEffect(() => {
     let isActive = true
@@ -45,21 +35,17 @@ export function PricingGridPage() {
       try {
         const response = await getActivePricingGrid()
 
-        if (!isActive) {
-          return
+        if (isActive) {
+          setPricingGrid(response)
         }
-
-        setPricingGrid(response)
       } catch (error) {
-        if (!isActive) {
-          return
+        if (isActive) {
+          setErrorMessage(
+            error instanceof Error
+              ? error.message
+              : 'Impossible de charger la marge règlementaire.',
+          )
         }
-
-        setErrorMessage(
-          error instanceof Error
-            ? error.message
-            : 'Impossible de charger la marge règlementaire.',
-        )
       } finally {
         if (isActive) {
           setIsLoading(false)
@@ -78,6 +64,97 @@ export function PricingGridPage() {
     () => pricingGrid?.pricingRules ?? [],
     [pricingGrid],
   )
+  const validationMessage = useMemo(
+    () => validatePricingRules(editablePricingRules),
+    [editablePricingRules],
+  )
+  const canSave = isEditing && !validationMessage && !isSaving
+
+  function handleStartEditing(): void {
+    setEditablePricingRules(buildEditablePricingRules(pricingRules))
+    setNextEditableRuleId(1)
+    setSuccessMessage('')
+    setErrorMessage('')
+    setIsEditing(true)
+  }
+
+  function handleCancelEditing(): void {
+    setEditablePricingRules([])
+    setIsEditing(false)
+    setErrorMessage('')
+  }
+
+  const handleEditableRuleChange = useCallback((
+    key: string,
+    field: EditablePricingRuleField,
+    value: string,
+  ): void => {
+    setEditablePricingRules((currentPricingRules) =>
+      currentPricingRules.map((pricingRule) =>
+        pricingRule.key === key
+          ? { ...pricingRule, [field]: value }
+          : pricingRule,
+      ),
+    )
+  }, [])
+
+  const handleAddRule = useCallback((afterIndex: number): void => {
+    setEditablePricingRules((currentPricingRules) => {
+      const selectedRule = currentPricingRules[afterIndex]
+
+      if (!selectedRule) {
+        return currentPricingRules
+      }
+
+      const nextPricingRules = [...currentPricingRules]
+
+      nextPricingRules.splice(afterIndex + 1, 0, {
+        key: `new-${nextEditableRuleId}`,
+        minPurchasePrice: selectedRule.minPurchasePrice,
+        maxPurchasePrice: selectedRule.maxPurchasePrice,
+        retailMarginPercent: selectedRule.retailMarginPercent,
+        wholesaleMarginPercent: selectedRule.wholesaleMarginPercent,
+      })
+
+      return nextPricingRules
+    })
+    setNextEditableRuleId((currentId) => currentId + 1)
+  }, [nextEditableRuleId])
+
+  const handleDeleteRule = useCallback((key: string): void => {
+    setEditablePricingRules((currentPricingRules) =>
+      currentPricingRules.filter((pricingRule) => pricingRule.key !== key),
+    )
+  }, [])
+
+  async function handleSavePricingGrid(): Promise<void> {
+    if (!canSave) {
+      return
+    }
+
+    setIsSaving(true)
+    setErrorMessage('')
+    setSuccessMessage('')
+
+    try {
+      const response = await updatePricingGrid({
+        pricingRules: buildPricingRulePayload(editablePricingRules),
+      })
+
+      setPricingGrid(response)
+      setEditablePricingRules([])
+      setIsEditing(false)
+      setSuccessMessage('Marge règlementaire mise à jour avec succès.')
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'Impossible de mettre à jour la marge règlementaire.',
+      )
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   return (
     <section className="flex min-h-[calc(100vh-7rem)] flex-col gap-6">
@@ -93,132 +170,95 @@ export function PricingGridPage() {
 
         {pricingGrid ? (
           <div className="grid gap-3 text-sm sm:grid-cols-3">
-            <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Statut
-              </p>
-              <p className="mt-1 font-semibold text-teal-700">
-                {pricingGrid.status}
-              </p>
-            </div>
-            <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Début
-              </p>
-              <p className="mt-1 font-semibold text-slate-900">
-                {formatDate(pricingGrid.effectiveFrom)}
-              </p>
-            </div>
-            <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Fin
-              </p>
-              <p className="mt-1 font-semibold text-slate-900">
-                {formatDate(pricingGrid.effectiveTo)}
-              </p>
-            </div>
+            <PricingGridInfo label="Statut" value={pricingGrid.status} />
+            <PricingGridInfo
+              label="Début"
+              value={formatDate(pricingGrid.effectiveFrom)}
+            />
+            <PricingGridInfo
+              label="Fin"
+              value={formatDate(pricingGrid.effectiveTo)}
+            />
           </div>
         ) : null}
       </div>
 
       {errorMessage ? <Alert type="error" message={errorMessage} /> : null}
+      {successMessage ? <Alert type="success" message={successMessage} /> : null}
+
+      {!isLoading && pricingRules.length > 0 ? (
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+          {isEditing ? (
+            <>
+              <button
+                type="button"
+                onClick={handleCancelEditing}
+                disabled={isSaving}
+                className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-teal-700 transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:text-slate-400"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={!canSave}
+                onClick={() => {
+                  void handleSavePricingGrid()
+                }}
+                className="rounded-lg bg-teal-700 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+              >
+                {isSaving ? 'Validation...' : 'Valider la modification'}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={handleStartEditing}
+              className="rounded-lg bg-teal-700 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800 focus:outline-none focus:ring-4 focus:ring-teal-200"
+            >
+              Modifier la marge
+            </button>
+          )}
+        </div>
+      ) : null}
+
+      {isEditing && validationMessage ? (
+        <Alert type="error" message={validationMessage} />
+      ) : null}
 
       {isLoading ? (
         <div className="rounded-lg border border-slate-200 bg-white px-4 py-10 text-center text-sm font-medium text-slate-500 shadow-sm">
           Chargement de la marge règlementaire...
         </div>
-      ) : pricingRules.length === 0 ? (
+      ) : pricingRules.length === 0 && !isEditing ? (
         <div className="rounded-lg border border-slate-200 bg-white px-4 py-10 text-center text-sm font-medium text-slate-500 shadow-sm">
           Aucune règle de marge règlementaire enregistrée.
         </div>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="min-w-[72rem] table-fixed border-collapse text-sm xl:w-full">
-              <colgroup>
-                <col className="w-36" />
-                <col className="w-36" />
-                <col className="w-40" />
-                <col className="w-40" />
-                <col className="w-40" />
-                <col className="w-40" />
-                <col className="w-40" />
-                <col className="w-40" />
-              </colgroup>
-              <thead className="sticky top-0 z-10 bg-slate-100 text-left text-xs font-bold uppercase tracking-wide text-slate-600">
-                <tr>
-                  <th className="border-b border-slate-200 px-4 py-3">
-                    Prix min
-                  </th>
-                  <th className="border-b border-slate-200 px-4 py-3">
-                    Prix max
-                  </th>
-                  <th className="border-b border-slate-200 px-4 py-3">
-                    Marge détail
-                  </th>
-                  <th className="border-b border-slate-200 px-4 py-3">
-                    Marge en gros
-                  </th>
-                  <th className="border-b border-slate-200 px-4 py-3">
-                    Moyenne détail
-                  </th>
-                  <th className="border-b border-slate-200 px-4 py-3">
-                    Moyenne en gros
-                  </th>
-                  <th className="border-b border-slate-200 px-4 py-3">
-                    Prix détail
-                  </th>
-                  <th className="border-b border-slate-200 px-4 py-3">
-                    Prix en gros
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {pricingRules.map((pricingRule) => {
-                  const retailPrice =
-                    pricingRule.maxPurchasePrice +
-                    Number(pricingRule.retailAverage)
-                  const wholesalePrice =
-                    pricingRule.maxPurchasePrice +
-                    Number(pricingRule.wholesaleAverage)
-
-                  return (
-                    <tr
-                      key={pricingRule.id}
-                      className="transition hover:bg-teal-50/60"
-                    >
-                      <td className="px-4 py-3 font-medium text-slate-900">
-                        {formatPrice(pricingRule.minPurchasePrice)}
-                      </td>
-                      <td className="px-4 py-3 font-medium text-slate-900">
-                        {formatPrice(pricingRule.maxPurchasePrice)}
-                      </td>
-                      <td className="px-4 py-3 text-slate-700">
-                        {formatPercent(pricingRule.retailMarginPercent)}
-                      </td>
-                      <td className="px-4 py-3 text-slate-700">
-                        {formatPercent(pricingRule.wholesaleMarginPercent)}
-                      </td>
-                      <td className="px-4 py-3 text-slate-700">
-                        {formatDecimal(pricingRule.retailAverage)}
-                      </td>
-                      <td className="px-4 py-3 text-slate-700">
-                        {formatDecimal(pricingRule.wholesaleAverage)}
-                      </td>
-                      <td className="px-4 py-3 font-semibold text-slate-950">
-                        {formatPrice(retailPrice)}
-                      </td>
-                      <td className="px-4 py-3 font-semibold text-slate-950">
-                        {formatPrice(wholesalePrice)}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <PricingGridTable
+          pricingRules={pricingRules}
+          editablePricingRules={editablePricingRules}
+          isEditing={isEditing}
+          onEditableRuleChange={handleEditableRuleChange}
+          onAddRule={handleAddRule}
+          onDeleteRule={handleDeleteRule}
+        />
       )}
     </section>
+  )
+}
+
+interface PricingGridInfoProps {
+  label: string
+  value: string
+}
+
+function PricingGridInfo({ label, value }: PricingGridInfoProps) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
+      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+        {label}
+      </p>
+      <p className="mt-1 font-semibold text-slate-900">{value}</p>
+    </div>
   )
 }

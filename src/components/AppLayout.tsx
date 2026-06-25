@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
-import { canManageProducts, canManageSuppliers } from '../auth/accessControl'
+import {
+  canManageMargin,
+  canManageProducts,
+  canManageSuppliers,
+} from '../auth/accessControl'
 import type { AuthenticatedUser } from '../auth/authApi'
 
 interface NavigationItem {
@@ -53,7 +57,7 @@ export function AppLayout({ user, onLogout }: AppLayoutProps) {
     (item) =>
       (item.path !== '/suppliers' || canManageSuppliers(user)) &&
       (item.path !== '/products' || canManageProducts(user)) &&
-      (item.path !== '/pricing-grid' || canManageProducts(user)) &&
+      (item.path !== '/pricing-grid' || canManageMargin(user)) &&
       (item.path !== '/product-referentials' || canManageProducts(user)),
   )
 

@@ -2,6 +2,7 @@ import type { AuthenticatedUser } from './authApi'
 
 const SUPPLIER_PERMISSIONS = ['ALL', 'CAN_SUPPLIERS', 'CAN_SUPPLIER'] as const
 const PRODUCT_PERMISSIONS = ['ALL', 'CAN_PRODUCTS'] as const
+const MARGIN_PERMISSIONS = ['ALL', 'CAN_MARGE'] as const
 
 export function canManageSuppliers(user: AuthenticatedUser | null): boolean {
   if (!user) {
@@ -29,6 +30,19 @@ export function canManageProducts(user: AuthenticatedUser | null): boolean {
   )
 }
 
+export function canManageMargin(user: AuthenticatedUser | null): boolean {
+  if (!user) {
+    return false
+  }
+
+  return (
+    user.role === 'ADMIN' ||
+    MARGIN_PERMISSIONS.some((permission) =>
+      user.permissions.includes(permission),
+    )
+  )
+}
+
 export function canAccessBackoffice(user: AuthenticatedUser | null): boolean {
-  return canManageSuppliers(user) || canManageProducts(user)
+  return canManageSuppliers(user) || canManageProducts(user) || canManageMargin(user)
 }
