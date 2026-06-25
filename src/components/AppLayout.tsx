@@ -31,6 +31,11 @@ const navigationItems: readonly NavigationItem[] = [
     icon: 'P',
   },
   {
+    label: 'Marge règlementaire',
+    path: '/pricing-grid',
+    icon: 'MR',
+  },
+  {
     label: 'Référentiels produits',
     path: '/product-referentials',
     icon: 'R',
@@ -48,6 +53,7 @@ export function AppLayout({ user, onLogout }: AppLayoutProps) {
     (item) =>
       (item.path !== '/suppliers' || canManageSuppliers(user)) &&
       (item.path !== '/products' || canManageProducts(user)) &&
+      (item.path !== '/pricing-grid' || canManageProducts(user)) &&
       (item.path !== '/product-referentials' || canManageProducts(user)),
   )
 
