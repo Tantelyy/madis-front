@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, type MouseEvent } from 'react'
+import { createPortal } from 'react-dom'
 import { displayValue, formatDateTime } from '../../utils/displayFormatters'
-import { formatPrice } from './inventoryFormatters'
+import { formatPrice, formatRoundedPrice } from './inventoryFormatters'
 import type { Inventory, ListInventoriesParams } from './inventoriesApi'
 
 type SortableInventoryField = Extract<
@@ -18,6 +19,12 @@ interface InventoriesTableProps {
   onHistory: (inventory: Inventory) => void
 }
 
+interface ActionMenuState {
+  inventoryId: number
+  top: number
+  left: number
+}
+
 export function InventoriesTable({
   inventories,
   isLoading,
@@ -27,9 +34,8 @@ export function InventoriesTable({
   onEdit,
   onHistory,
 }: InventoriesTableProps) {
-  const [openedActionInventoryId, setOpenedActionInventoryId] = useState<
-    number | null
-  >(null)
+  const [actionMenuState, setActionMenuState] =
+    useState<ActionMenuState | null>(null)
 
   function getSortIndicator(field: SortableInventoryField): string {
     if (sortBy !== field) {
@@ -111,10 +117,10 @@ export function InventoriesTable({
                     {formatPrice(inventory.purchasePrice)}
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
-                    {formatPrice(inventory.salePrice)}
+                    {formatRoundedPrice(inventory.salePrice)}
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
-                    {formatPrice(inventory.wholesalePrice)}
+                    {formatRoundedPrice(inventory.wholesalePrice)}
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
                     {inventory.expiredAt ? formatDateTime(inventory.expiredAt) : '-'}
@@ -127,20 +133,36 @@ export function InventoriesTable({
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 text-right">
                     <RowActionsMenu
-                      isOpen={openedActionInventoryId === inventory.id}
-                      onToggle={() =>
-                        setOpenedActionInventoryId((currentInventoryId) =>
-                          currentInventoryId === inventory.id
-                            ? null
-                            : inventory.id,
-                        )
+                      position={
+                        actionMenuState?.inventoryId === inventory.id
+                          ? actionMenuState
+                          : null
                       }
+                      onToggle={(event) => {
+                        const rect = event.currentTarget.getBoundingClientRect()
+                        const menuHeight = 84
+                        const menuWidth = 160
+                        const canOpenBelow =
+                          rect.bottom + menuHeight + 8 < window.innerHeight
+
+                        setActionMenuState((currentMenuState) =>
+                          currentMenuState?.inventoryId === inventory.id
+                            ? null
+                            : {
+                                inventoryId: inventory.id,
+                                top: canOpenBelow
+                                  ? rect.bottom + 4
+                                  : rect.top - menuHeight - 4,
+                                left: Math.max(8, rect.right - menuWidth),
+                              },
+                        )
+                      }}
                       onEdit={() => {
-                        setOpenedActionInventoryId(null)
+                        setActionMenuState(null)
                         onEdit(inventory)
                       }}
                       onHistory={() => {
-                        setOpenedActionInventoryId(null)
+                        setActionMenuState(null)
                         onHistory(inventory)
                       }}
                     />
@@ -198,20 +220,20 @@ function EmptyRow({ message }: { message: string }) {
 }
 
 interface RowActionsMenuProps {
-  isOpen: boolean
-  onToggle: () => void
+  position: ActionMenuState | null
+  onToggle: (event: MouseEvent<HTMLButtonElement>) => void
   onEdit: () => void
   onHistory: () => void
 }
 
 function RowActionsMenu({
-  isOpen,
+  position,
   onToggle,
   onEdit,
   onHistory,
 }: RowActionsMenuProps) {
   return (
-    <div className="relative inline-flex justify-end">
+    <div className="inline-flex justify-end">
       <button
         type="button"
         onClick={onToggle}
@@ -221,12 +243,21 @@ function RowActionsMenu({
       >
         ...
       </button>
-      {isOpen ? (
-        <div className="absolute right-0 top-10 z-20 w-40 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 text-left shadow-lg">
+      {position
+        ? createPortal(
+            <div
+              className="fixed z-50 w-40 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 text-left shadow-lg"
+              style={{
+                top: position.top,
+                left: position.left,
+              }}
+            >
           <MenuAction label="Modifier" onClick={onEdit} />
           <MenuAction label="Historique" onClick={onHistory} />
-        </div>
-      ) : null}
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   )
 }

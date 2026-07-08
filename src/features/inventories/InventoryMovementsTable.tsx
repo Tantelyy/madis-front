@@ -1,5 +1,9 @@
 import { formatDateTime, formatUser } from '../../utils/displayFormatters'
-import { formatMovementType, formatPrice } from './inventoryFormatters'
+import {
+  formatMovementType,
+  formatPrice,
+  formatRoundedPrice,
+} from './inventoryFormatters'
 import type { InventoryMovement } from './inventoriesApi'
 
 interface InventoryMovementsTableProps {
@@ -56,10 +60,10 @@ export function InventoryMovementsTable({
                     {formatPrice(movement.purchasePrice)}
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
-                    {formatPrice(movement.salePrice)}
+                    {formatRoundedPrice(movement.salePrice)}
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
-                    {formatPrice(movement.wholesalePrice)}
+                    {formatRoundedPrice(movement.wholesalePrice)}
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
                     {formatUser(movement.actor)}
