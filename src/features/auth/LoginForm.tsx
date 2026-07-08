@@ -4,6 +4,7 @@ import {
   type AuthenticatedUser,
   type LoginCredentials,
 } from '../../auth/authApi'
+import { consumeLoginRedirectMessage } from '../../auth/loginRedirect'
 import { Alert } from '../../components/Alert'
 import { TextField } from '../../components/TextField'
 
@@ -19,7 +20,9 @@ const initialCredentials: LoginCredentials = {
 export function LoginForm({ onLoginSuccess }: LoginFormProps) {
   const [credentials, setCredentials] =
     useState<LoginCredentials>(initialCredentials)
-  const [errorMessage, setErrorMessage] = useState<string>('')
+  const [errorMessage, setErrorMessage] = useState<string>(() =>
+    consumeLoginRedirectMessage(),
+  )
   const [successMessage, setSuccessMessage] = useState<string>('')
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
 

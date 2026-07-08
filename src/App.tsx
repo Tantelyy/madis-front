@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
-import { canAccessBackoffice } from './auth/accessControl'
+import { canAccessBackoffice, canManageInventory } from './auth/accessControl'
 import { logout, type AuthenticatedUser } from './auth/authApi'
 import {
   clearStoredUser,
@@ -9,6 +9,8 @@ import {
 } from './auth/sessionStorage'
 import { AppLayout } from './components/AppLayout'
 import { DashboardPage } from './pages/DashboardPage'
+import { InventoryMovementsPage } from './pages/InventoryMovementsPage'
+import { InventoriesPage } from './pages/InventoriesPage'
 import { LoginPage } from './pages/LoginPage'
 import { ProductReferentialsPage } from './pages/ProductReferentialsPage'
 import { PricingGridPage } from './pages/PricingGridPage'
@@ -71,6 +73,26 @@ function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/suppliers" element={<SuppliersPage />} />
           <Route path="/products" element={<ProductsPage />} />
+          <Route
+            path="/inventories"
+            element={
+              canManageInventory(currentUser) ? (
+                <InventoriesPage />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+          <Route
+            path="/inventory-movements"
+            element={
+              canManageInventory(currentUser) ? (
+                <InventoryMovementsPage />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
           <Route
             path="/product-referentials"
             element={<ProductReferentialsPage />}

@@ -7,6 +7,7 @@ import {
 import { Alert } from '../../components/Alert'
 import { TextField } from '../../components/TextField'
 import { formatDateTime } from '../../utils/displayFormatters'
+import { getSortLabel } from '../../utils/sortLabel'
 import { ProductModal } from './ProductModal'
 
 type SortOrder = 'asc' | 'desc'
@@ -97,14 +98,6 @@ export function ReferentialPanel<TItem extends ReferentialItem>({
     setSortBy(nextSortBy)
   }
 
-  function getSortLabel(field: SortField, label: string): string {
-    if (sortBy !== field) {
-      return `${label} ↕`
-    }
-
-    return `${label} ${sortOrder === 'asc' ? '↑' : '↓'}`
-  }
-
   function openCreateModal(): void {
     onClearMessages()
     setFormValue('')
@@ -183,15 +176,39 @@ export function ReferentialPanel<TItem extends ReferentialItem>({
             <thead className="bg-slate-100">
               <tr>
                 <SortableHeader
-                  label={getSortLabel('label', fieldLabel)}
+                  label={getSortLabel(sortBy, sortOrder, 'label', fieldLabel, {
+                    inactiveIndicator: '↕',
+                    ascIndicator: '↑',
+                    descIndicator: '↓',
+                  })}
                   onSort={() => handleSort('label')}
                 />
                 <SortableHeader
-                  label={getSortLabel('createdAt', 'Créé le')}
+                  label={getSortLabel(
+                    sortBy,
+                    sortOrder,
+                    'createdAt',
+                    'Créé le',
+                    {
+                      inactiveIndicator: '↕',
+                      ascIndicator: '↑',
+                      descIndicator: '↓',
+                    },
+                  )}
                   onSort={() => handleSort('createdAt')}
                 />
                 <SortableHeader
-                  label={getSortLabel('updatedAt', 'Mis à jour le')}
+                  label={getSortLabel(
+                    sortBy,
+                    sortOrder,
+                    'updatedAt',
+                    'Mis à jour le',
+                    {
+                      inactiveIndicator: '↕',
+                      ascIndicator: '↑',
+                      descIndicator: '↓',
+                    },
+                  )}
                   onSort={() => handleSort('updatedAt')}
                 />
                 <th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">
