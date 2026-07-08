@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ChangeEvent } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Alert } from '../components/Alert'
 import { Pagination } from '../components/Pagination'
 import { SupplierDetails } from '../features/suppliers/SupplierDetails'
@@ -15,6 +15,11 @@ import {
   type Supplier,
   type SupplierPayload,
 } from '../features/suppliers/suppliersApi'
+import { useListControls } from '../hooks/useListControls'
+import {
+  createPaginationMeta,
+  normalizePaginationMeta,
+} from '../utils/paginationMeta'
 
 const PAGE_SIZE = 10
 
@@ -31,22 +36,27 @@ type SortableSupplierField = Extract<
 
 export function SuppliersPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
-  const [meta, setMeta] = useState<PaginatedSuppliers['meta']>({
-    total: 0,
-    page: 1,
-    limit: PAGE_SIZE,
-    totalPages: 1,
-  })
-  const [page, setPage] = useState<number>(1)
-  const [search, setSearch] = useState<string>('')
-  const [sortBy, setSortBy] = useState<SortableSupplierField>('createdAt')
-  const [sortOrder, setSortOrder] =
-    useState<NonNullable<ListSuppliersParams['order']>>('desc')
+  const [meta, setMeta] = useState<PaginatedSuppliers['meta']>(() =>
+    createPaginationMeta(PAGE_SIZE),
+  )
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const [errorMessage, setErrorMessage] = useState<string>('')
   const [successMessage, setSuccessMessage] = useState<string>('')
   const [modalState, setModalState] = useState<SupplierModalState>(null)
+  const {
+    page,
+    setPage,
+    search,
+    sortBy,
+    sortOrder,
+    handleSearchChange,
+    handlePageChange,
+    handleSort,
+  } = useListControls<SortableSupplierField>({
+    initialSortBy: 'createdAt',
+    onBeforeChange: () => setIsLoading(true),
+  })
 
   const fetchSuppliers = useCallback((): Promise<PaginatedSuppliers> => {
     return listSuppliers({
@@ -60,10 +70,7 @@ export function SuppliersPage() {
 
   function applySuppliersResponse(response: PaginatedSuppliers): void {
     setSuppliers(response.data)
-    setMeta({
-      ...response.meta,
-      totalPages: Math.max(response.meta.totalPages, 1),
-    })
+    setMeta(normalizePaginationMeta(response.meta))
   }
 
   useEffect(() => {
@@ -101,26 +108,6 @@ export function SuppliersPage() {
       isActive = false
     }
   }, [fetchSuppliers])
-
-  function handleSearchChange(event: ChangeEvent<HTMLInputElement>): void {
-    setIsLoading(true)
-    setSearch(event.target.value)
-    setPage(1)
-  }
-
-  function handlePageChange(nextPage: number): void {
-    setIsLoading(true)
-    setPage(nextPage)
-  }
-
-  function handleSort(nextSortBy: SortableSupplierField): void {
-    setIsLoading(true)
-    setPage(1)
-    setSortOrder((currentSortOrder) =>
-      sortBy === nextSortBy && currentSortOrder === 'desc' ? 'asc' : 'desc',
-    )
-    setSortBy(nextSortBy)
-  }
 
   async function handleSaveSupplier(payload: SupplierPayload): Promise<void> {
     setIsSubmitting(true)

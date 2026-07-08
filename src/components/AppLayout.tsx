@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import {
+  canManageInventory,
   canManageMargin,
   canManageProducts,
   canManageSuppliers,
@@ -35,6 +36,11 @@ const navigationItems: readonly NavigationItem[] = [
     icon: 'P',
   },
   {
+    label: 'Entrée en stock',
+    path: '/inventories',
+    icon: 'ES',
+  },
+  {
     label: 'Marge règlementaire',
     path: '/pricing-grid',
     icon: 'MR',
@@ -57,6 +63,7 @@ export function AppLayout({ user, onLogout }: AppLayoutProps) {
     (item) =>
       (item.path !== '/suppliers' || canManageSuppliers(user)) &&
       (item.path !== '/products' || canManageProducts(user)) &&
+      (item.path !== '/inventories' || canManageInventory(user)) &&
       (item.path !== '/pricing-grid' || canManageMargin(user)) &&
       (item.path !== '/product-referentials' || canManageProducts(user)),
   )
