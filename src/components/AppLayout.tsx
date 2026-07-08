@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import {
+  canManageAccounts,
   canManageInventory,
   canManageMargin,
   canManageProducts,
@@ -50,6 +51,11 @@ const navigationItems: readonly NavigationItem[] = [
     path: '/product-referentials',
     icon: 'R',
   },
+  {
+    label: 'Comptes',
+    path: '/accounts',
+    icon: 'C',
+  },
 ]
 
 export function AppLayout({ user, onLogout }: AppLayoutProps) {
@@ -65,7 +71,8 @@ export function AppLayout({ user, onLogout }: AppLayoutProps) {
       (item.path !== '/products' || canManageProducts(user)) &&
       (item.path !== '/inventories' || canManageInventory(user)) &&
       (item.path !== '/pricing-grid' || canManageMargin(user)) &&
-      (item.path !== '/product-referentials' || canManageProducts(user)),
+      (item.path !== '/product-referentials' || canManageProducts(user)) &&
+      (item.path !== '/accounts' || canManageAccounts(user)),
   )
 
   return (

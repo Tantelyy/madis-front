@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
-import { canAccessBackoffice, canManageInventory } from './auth/accessControl'
+import {
+  canAccessBackoffice,
+  canManageAccounts,
+  canManageInventory,
+} from './auth/accessControl'
 import { logout, type AuthenticatedUser } from './auth/authApi'
 import {
   clearStoredUser,
@@ -8,6 +12,7 @@ import {
   storeUser,
 } from './auth/sessionStorage'
 import { AppLayout } from './components/AppLayout'
+import { AccountsPage } from './pages/AccountsPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { InventoryMovementsPage } from './pages/InventoryMovementsPage'
 import { InventoriesPage } from './pages/InventoriesPage'
@@ -98,6 +103,16 @@ function App() {
             element={<ProductReferentialsPage />}
           />
           <Route path="/pricing-grid" element={<PricingGridPage />} />
+          <Route
+            path="/accounts"
+            element={
+              canManageAccounts(currentUser) ? (
+                <AccountsPage currentUserId={currentUser?.id ?? null} />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} />
