@@ -19,11 +19,13 @@ import { DashboardPage } from './pages/DashboardPage'
 import { InventoryMovementsPage } from './pages/InventoryMovementsPage'
 import { InventoriesPage } from './pages/InventoriesPage'
 import { LoginPage } from './pages/LoginPage'
+import { PendingSalesPage } from './pages/PendingSalesPage'
 import { ProductReferentialsPage } from './pages/ProductReferentialsPage'
 import { PricingGridPage } from './pages/PricingGridPage'
 import { ProductsPage } from './pages/ProductsPage'
 import { PromotionsPage } from './pages/PromotionsPage'
 import { SalesPage } from './pages/SalesPage'
+import { SalesHistoryPage } from './pages/SalesHistoryPage'
 import { SuppliersPage } from './pages/SuppliersPage'
 import { AdminRoute } from './routes/AdminRoute'
 
@@ -91,6 +93,26 @@ function App() {
                 <SalesPage user={currentUser} />
               ) : (
                 <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+          <Route
+            path="/sales/history"
+            element={
+              canSell(currentUser) && currentUser ? (
+                <SalesHistoryPage user={currentUser} />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+          <Route
+            path="/sales/pending"
+            element={
+              currentUser?.role === 'ADMIN' ? (
+                <PendingSalesPage />
+              ) : (
+                <Navigate to="/sales" replace />
               )
             }
           />

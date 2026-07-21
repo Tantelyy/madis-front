@@ -88,7 +88,7 @@ export function AppLayout({ user, onLogout }: AppLayoutProps) {
       (item.path !== '/pricing-grid' || canManageMargin(user)) &&
       (item.path !== '/product-referentials' || canManageProducts(user)) &&
       (item.path !== '/accounts' || canManageAccounts(user)) &&
-      (item.path !== '/sales' || canSell(user)) &&
+      (!item.path.startsWith('/sales') || canSell(user)) &&
       (item.path !== '/promotions' || canSell(user)),
   )
 
@@ -152,6 +152,7 @@ export function AppLayout({ user, onLogout }: AppLayoutProps) {
             <NavLink
               key={item.path}
               to={item.path}
+              end={item.path === '/sales'}
               title={item.label}
               onClick={() => {
                 if (window.innerWidth < 1024) {

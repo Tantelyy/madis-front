@@ -1,11 +1,13 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react'
+import { useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
 import { Alert } from '../../components/Alert'
+import { formatPrice } from '../../utils/displayFormatters'
 import {
   createSale,
   paySale,
   PAYMENT_METHOD_OPTIONS,
   type PaymentMethod,
 } from './salesApi'
+import { calculateCartPricing } from './cartPricing'
 import { useSalesCart } from './salesCart'
 
 interface SalesCartDrawerProps {
@@ -22,6 +24,7 @@ export function SalesCartDrawer({ onClose }: SalesCartDrawerProps) {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const [errorMessage, setErrorMessage] = useState<string>('')
   const [successMessage, setSuccessMessage] = useState<string>('')
+  const cartPricing = useMemo(() => calculateCartPricing(items), [items])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
@@ -34,6 +37,7 @@ export function SalesCartDrawer({ onClose }: SalesCartDrawerProps) {
         customerName,
         customerContact,
         customerAddress,
+        paymentMethod,
         items: items.map((item) => ({
           productId: item.product.id,
           quantity: item.quantity,
@@ -112,7 +116,7 @@ export function SalesCartDrawer({ onClose }: SalesCartDrawerProps) {
               Votre panier est vide.
             </div>
           ) : (
-            items.map((item) => (
+            cartPricing.items.map(({ item, pricing }) => (
               <article
                 key={item.product.id}
                 className="rounded-lg border border-slate-200 p-4"
@@ -123,7 +127,7 @@ export function SalesCartDrawer({ onClose }: SalesCartDrawerProps) {
                       {item.product.name}
                     </h3>
                     <p className="mt-1 text-xs text-slate-500">
-                      {item.quantity > 3 || item.wholesale
+                      {pricing.isWholesale
                         ? 'Prix de gros'
                         : 'Prix de détail'}
                     </p>
@@ -168,12 +172,68 @@ export function SalesCartDrawer({ onClose }: SalesCartDrawerProps) {
                     Demande prix de gros
                   </label>
                 </div>
+                <div className="mt-4 grid grid-cols-2 gap-3 rounded-lg bg-slate-50 p-3">
+                  <div>
+                    <p className="text-xs font-medium text-slate-500">
+                      Prix unitaire
+                    </p>
+                    {pricing.promotionalQuantity > 0 &&
+                    pricing.standardQuantity > 0 ? (
+                      <div className="mt-1 space-y-1 text-xs text-slate-600">
+                        <p>
+                          {pricing.promotionalQuantity} x promotion :{' '}
+                          <strong>
+                            {formatPrice(pricing.promotionalUnitPrice)}
+                          </strong>
+                        </p>
+                        <p>
+                          {pricing.standardQuantity} x normal :{' '}
+                          <strong>
+                            {formatPrice(pricing.standardUnitPrice)}
+                          </strong>
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="mt-1 font-bold text-slate-900">
+                        {formatPrice(
+                          pricing.promotionalQuantity > 0
+                            ? pricing.promotionalUnitPrice
+                            : pricing.standardUnitPrice,
+                        )}
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-medium text-slate-500">
+                      Sous-total
+                    </p>
+                    <p className="mt-1 text-lg font-bold text-teal-800">
+                      {formatPrice(pricing.subtotal)}
+                    </p>
+                  </div>
+                </div>
               </article>
             ))
           )}
 
           {items.length > 0 ? (
-            <form className="space-y-4 border-t border-slate-200 pt-5" onSubmit={handleSubmit}>
+            <form
+              className="space-y-4 border-t border-slate-200 pt-5"
+              onSubmit={handleSubmit}
+            >
+              <div className="flex items-center justify-between rounded-xl bg-teal-50 px-4 py-4">
+                <div>
+                  <p className="text-sm font-semibold text-teal-900">
+                    Total du panier
+                  </p>
+                  <p className="mt-1 text-xs text-teal-700">
+                    Montant confirm&eacute; lors de l&rsquo;enregistrement
+                  </p>
+                </div>
+                <p className="text-xl font-bold text-teal-900">
+                  {formatPrice(cartPricing.total)}
+                </p>
+              </div>
               <h3 className="font-bold text-slate-950">Informations client</h3>
               <input
                 value={customerName}

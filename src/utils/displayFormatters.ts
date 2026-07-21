@@ -24,7 +24,7 @@ export function formatDate(value: string | null): string {
   }).format(new Date(value))
 }
 
-export function formatPrice(value: string | null): string {
+export function formatPrice(value: string | number | null): string {
   if (value === null) {
     return '-'
   }

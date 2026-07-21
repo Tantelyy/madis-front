@@ -240,13 +240,17 @@ export function PromotionsPage() {
                 <td className="px-4 py-4">{formatDateTime(offer.startDateTime)} → {formatDateTime(offer.endDateTime)}</td>
                 <td className="px-4 py-4">{formatDate(offer.limitDate)}</td>
                 <td className="px-4 py-4">
-                  {offer.deletedAt ? 'Supprimée' : offer.hasSales ? 'Utilisée' : 'Modifiable'}
+                  {offer.deletedAt
+                    ? 'Supprimée'
+                    : offer.isLocked
+                      ? 'Verrouillée par une vente'
+                      : 'Modifiable'}
                 </td>
                 <td className="px-4 py-4 text-right">
                   <div className="flex justify-end gap-2">
                     <button
                       type="button"
-                      disabled={Boolean(offer.deletedAt) || offer.hasSales}
+                      disabled={Boolean(offer.deletedAt) || offer.isLocked}
                       onClick={() => setSelectedOffer(offer)}
                       className="rounded-lg border border-slate-200 px-3 py-2 font-semibold text-teal-700 disabled:cursor-not-allowed disabled:opacity-40"
                     >

@@ -29,6 +29,8 @@ export interface SaleCatalogProduct {
   image: string | null
   retailPrice: string | null
   wholesalePrice: string | null
+  baseRetailPrice: string | null
+  baseWholesalePrice: string | null
   totalStock: number
   promotionStock: number
   hasPromotion: boolean
@@ -55,6 +57,12 @@ export interface SaleDetail {
   discountAmount: string | null
   wholesale: boolean
   specialOfferId: number | null
+  product: {
+    id: number
+    name: string
+    reference: string
+    image: string | null
+  }
 }
 
 export interface Sale {
@@ -104,6 +112,7 @@ export interface CreateSalePayload {
   customerName: string
   customerContact: string
   customerAddress: string
+  paymentMethod: PaymentMethod
   items: {
     productId: number
     quantity: number
@@ -188,6 +197,12 @@ export function paySale(
   })
 }
 
-export function validateSale(id: number): Promise<Sale> {
-  return requestJson<Sale>(`/sales/${id}/validate`, { method: 'POST' })
+export function validateSale(
+  id: number,
+  paymentMethod: PaymentMethod,
+): Promise<Sale> {
+  return requestJson<Sale>(`/sales/${id}/validate`, {
+    method: 'POST',
+    body: JSON.stringify({ paymentMethod }),
+  })
 }

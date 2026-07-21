@@ -20,7 +20,7 @@ export interface SpecialOffer {
   type: SpecialOfferType
   productIds: number[]
   limitDate: string | null
-  hasSales: boolean
+  isLocked: boolean
 }
 
 export interface SpecialOfferPayload {
