@@ -4,6 +4,7 @@ import {
   canAccessBackoffice,
   canManageAccounts,
   canManageInventory,
+  canSell,
 } from './auth/accessControl'
 import { logout, type AuthenticatedUser } from './auth/authApi'
 import {
@@ -12,14 +13,19 @@ import {
   storeUser,
 } from './auth/sessionStorage'
 import { AppLayout } from './components/AppLayout'
+import { SalesCartProvider } from './features/sales/SalesCartContext'
 import { AccountsPage } from './pages/AccountsPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { InventoryMovementsPage } from './pages/InventoryMovementsPage'
 import { InventoriesPage } from './pages/InventoriesPage'
 import { LoginPage } from './pages/LoginPage'
+import { PendingSalesPage } from './pages/PendingSalesPage'
 import { ProductReferentialsPage } from './pages/ProductReferentialsPage'
 import { PricingGridPage } from './pages/PricingGridPage'
 import { ProductsPage } from './pages/ProductsPage'
+import { PromotionsPage } from './pages/PromotionsPage'
+import { SalesPage } from './pages/SalesPage'
+import { SalesHistoryPage } from './pages/SalesHistoryPage'
 import { SuppliersPage } from './pages/SuppliersPage'
 import { AdminRoute } from './routes/AdminRoute'
 
@@ -67,17 +73,59 @@ function App() {
       <Route element={<AdminRoute user={currentUser} />}>
         <Route
           element={
-            <AppLayout
-              user={currentUser}
-              onLogout={() => {
-                void handleLogout()
-              }}
-            />
+            <SalesCartProvider>
+              <AppLayout
+                user={currentUser}
+                onLogout={() => {
+                  void handleLogout()
+                }}
+              />
+            </SalesCartProvider>
           }
         >
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/suppliers" element={<SuppliersPage />} />
           <Route path="/products" element={<ProductsPage />} />
+          <Route
+            path="/sales"
+            element={
+              canSell(currentUser) && currentUser ? (
+                <SalesPage user={currentUser} />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+          <Route
+            path="/sales/history"
+            element={
+              canSell(currentUser) && currentUser ? (
+                <SalesHistoryPage user={currentUser} />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+          <Route
+            path="/sales/pending"
+            element={
+              currentUser?.role === 'ADMIN' ? (
+                <PendingSalesPage />
+              ) : (
+                <Navigate to="/sales" replace />
+              )
+            }
+          />
+          <Route
+            path="/promotions"
+            element={
+              canSell(currentUser) ? (
+                <PromotionsPage />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
           <Route
             path="/inventories"
             element={

@@ -6,8 +6,11 @@ import {
   canManageMargin,
   canManageProducts,
   canManageSuppliers,
+  canSell,
 } from '../auth/accessControl'
 import type { AuthenticatedUser } from '../auth/authApi'
+import { SalesCartDrawer } from '../features/sales/SalesCartDrawer'
+import { useSalesCart } from '../features/sales/salesCart'
 
 interface NavigationItem {
   label: string
@@ -37,6 +40,16 @@ const navigationItems: readonly NavigationItem[] = [
     icon: 'P',
   },
   {
+    label: 'Vente',
+    path: '/sales',
+    icon: 'V',
+  },
+  {
+    label: 'Promotions',
+    path: '/promotions',
+    icon: '%',
+  },
+  {
     label: 'Entrée en stock',
     path: '/inventories',
     icon: 'ES',
@@ -60,6 +73,8 @@ const navigationItems: readonly NavigationItem[] = [
 
 export function AppLayout({ user, onLogout }: AppLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true)
+  const [isCartOpen, setIsCartOpen] = useState<boolean>(false)
+  const { itemCount } = useSalesCart()
 
   if (!user) {
     return null
@@ -72,7 +87,9 @@ export function AppLayout({ user, onLogout }: AppLayoutProps) {
       (item.path !== '/inventories' || canManageInventory(user)) &&
       (item.path !== '/pricing-grid' || canManageMargin(user)) &&
       (item.path !== '/product-referentials' || canManageProducts(user)) &&
-      (item.path !== '/accounts' || canManageAccounts(user)),
+      (item.path !== '/accounts' || canManageAccounts(user)) &&
+      (!item.path.startsWith('/sales') || canSell(user)) &&
+      (item.path !== '/promotions' || canSell(user)),
   )
 
   return (
@@ -94,7 +111,7 @@ export function AppLayout({ user, onLogout }: AppLayoutProps) {
         aria-label="Menu principal"
       >
         <div
-          className={`flex h-20 items-center border-b border-slate-200 ${
+          className={`flex h-20 shrink-0 items-center border-b border-slate-200 ${
             isSidebarOpen ? 'gap-3 px-6' : 'justify-center px-3'
           }`}
         >
@@ -127,7 +144,7 @@ export function AppLayout({ user, onLogout }: AppLayoutProps) {
         </div>
 
         <nav
-          className={`flex-1 space-y-2 py-6 ${
+          className={`min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain py-6 ${
             isSidebarOpen ? 'px-4' : 'px-3'
           }`}
         >
@@ -135,6 +152,7 @@ export function AppLayout({ user, onLogout }: AppLayoutProps) {
             <NavLink
               key={item.path}
               to={item.path}
+              end={item.path === '/sales'}
               title={item.label}
               onClick={() => {
                 if (window.innerWidth < 1024) {
@@ -163,7 +181,7 @@ export function AppLayout({ user, onLogout }: AppLayoutProps) {
         </nav>
 
         <div
-          className={`border-t border-slate-200 ${
+          className={`shrink-0 border-t border-slate-200 bg-white ${
             isSidebarOpen ? 'p-4' : 'p-3'
           }`}
         >
@@ -213,11 +231,28 @@ export function AppLayout({ user, onLogout }: AppLayoutProps) {
             </span>
           </button>
 
-          <div className="ml-auto text-right">
-            <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
-              Backoffice
-            </p>
-            <p className="text-sm font-semibold text-slate-700">{user.role}</p>
+          <div className="ml-auto flex items-center gap-3">
+            {canSell(user) ? (
+              <button
+                type="button"
+                onClick={() => setIsCartOpen(true)}
+                className="relative rounded-lg border border-teal-200 bg-teal-50 px-4 py-2 text-sm font-bold text-teal-800 hover:bg-teal-100"
+                aria-label={`Ouvrir le panier, ${itemCount} produit(s)`}
+              >
+                Panier
+                {itemCount > 0 ? (
+                  <span className="ml-2 rounded-full bg-teal-700 px-2 py-0.5 text-xs text-white">
+                    {itemCount}
+                  </span>
+                ) : null}
+              </button>
+            ) : null}
+            <div className="text-right">
+              <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
+                Backoffice
+              </p>
+              <p className="text-sm font-semibold text-slate-700">{user.role}</p>
+            </div>
           </div>
         </header>
 
@@ -225,6 +260,9 @@ export function AppLayout({ user, onLogout }: AppLayoutProps) {
           <Outlet />
         </main>
       </div>
+      {isCartOpen ? (
+        <SalesCartDrawer onClose={() => setIsCartOpen(false)} />
+      ) : null}
     </div>
   )
 }
