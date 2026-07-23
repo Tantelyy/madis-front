@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { formatDateTime, formatPrice } from '../../utils/displayFormatters'
 import { InvoiceDownloadButton } from './InvoiceDownloadButton'
 import {
+  canGenerateSaleInvoice,
   formatSaleStatus,
   saleStatusClassName,
 } from './saleDisplay'
@@ -81,7 +82,7 @@ export function SaleListTable({
                   onClick={(event) => event.stopPropagation()}
                 >
                   <div className="flex justify-end gap-2">
-                    {sale.status === 'PAID' ? (
+                    {canGenerateSaleInvoice(sale.status) ? (
                       <InvoiceDownloadButton sale={sale} />
                     ) : null}
                     {renderActions?.(sale)}

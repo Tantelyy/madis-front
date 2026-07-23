@@ -197,6 +197,25 @@ export function validateSale(id: number): Promise<Sale> {
   })
 }
 
+function reverseSale(
+  id: number,
+  action: 'refund' | 'cancel',
+  reason: string,
+): Promise<Sale> {
+  return requestJson<Sale>(`/sales/${id}/${action}`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  })
+}
+
+export function refundSale(id: number, reason: string): Promise<Sale> {
+  return reverseSale(id, 'refund', reason)
+}
+
+export function cancelSale(id: number, reason: string): Promise<Sale> {
+  return reverseSale(id, 'cancel', reason)
+}
+
 export interface InvoiceCustomer {
   customerName?: string
   customerContact?: string

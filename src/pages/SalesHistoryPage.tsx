@@ -7,17 +7,27 @@ import { InventoryModal } from '../features/inventories/InventoryModal'
 import { SaleDetails } from '../features/sales/SaleDetails'
 import { SaleListTable } from '../features/sales/SaleListTable'
 import {
+  SaleReversalModal,
+  type SaleReversalKind,
+} from '../features/sales/SaleReversalModal'
+import {
   type CartStatus,
   type Sale,
 } from '../features/sales/salesApi'
 import { useSalesList } from '../features/sales/useSalesList'
 
 const PAGE_SIZE = 10
+interface ReversalState {
+  sale: Sale
+  kind: SaleReversalKind
+}
 
 export function SalesHistoryPage({ user }: { user: AuthenticatedUser }) {
   const navigate = useNavigate()
   const [status, setStatus] = useState<CartStatus | undefined>(undefined)
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null)
+  const [reversalState, setReversalState] = useState<ReversalState | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string>('')
   const {
     sales,
     meta,
@@ -27,6 +37,7 @@ export function SalesHistoryPage({ user }: { user: AuthenticatedUser }) {
     setPage,
     setSearch,
     setIsLoading,
+    refresh,
   } = useSalesList(status, PAGE_SIZE)
 
   function handleSearch(event: ChangeEvent<HTMLInputElement>): void {
@@ -61,6 +72,7 @@ export function SalesHistoryPage({ user }: { user: AuthenticatedUser }) {
       </div>
 
       {errorMessage ? <Alert type="error" message={errorMessage} /> : null}
+      {successMessage ? <Alert type="success" message={successMessage} /> : null}
 
       <div className="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_16rem]">
         <input
@@ -96,6 +108,39 @@ export function SalesHistoryPage({ user }: { user: AuthenticatedUser }) {
         sales={sales}
         isLoading={isLoading}
         onSelect={setSelectedSale}
+        renderActions={(sale) => {
+          if (sale.status === 'PAID') {
+            return (
+              <button
+                type="button"
+                onClick={() => {
+                  setSuccessMessage('')
+                  setReversalState({ sale, kind: 'REFUND' })
+                }}
+                className="rounded-lg border border-violet-200 px-3 py-2 font-semibold text-violet-700 hover:bg-violet-50"
+              >
+                Rembourser
+              </button>
+            )
+          }
+
+          if (sale.status === 'VALIDATED') {
+            return (
+              <button
+                type="button"
+                onClick={() => {
+                  setSuccessMessage('')
+                  setReversalState({ sale, kind: 'CANCEL' })
+                }}
+                className="rounded-lg border border-red-200 px-3 py-2 font-semibold text-red-700 hover:bg-red-50"
+              >
+                Annuler
+              </button>
+            )
+          }
+
+          return null
+        }}
       />
 
       {meta.totalPages > 1 ? (
@@ -117,6 +162,22 @@ export function SalesHistoryPage({ user }: { user: AuthenticatedUser }) {
         >
           <SaleDetails sale={selectedSale} />
         </InventoryModal>
+      ) : null}
+
+      {reversalState ? (
+        <SaleReversalModal
+          sale={reversalState.sale}
+          kind={reversalState.kind}
+          onClose={() => setReversalState(null)}
+          onCompleted={async (sale) => {
+            setSuccessMessage(
+              sale.status === 'REFUNDED'
+                ? `Vente n°${sale.id} remboursée avec succès.`
+                : `Vente n°${sale.id} annulée avec succès.`,
+            )
+            await refresh()
+          }}
+        />
       ) : null}
     </section>
   )
