@@ -2,7 +2,12 @@ import { requestJson } from '../../utils/apiClient'
 import type { Product } from '../products/productsApi'
 import type { Supplier } from '../suppliers/suppliersApi'
 
-export type InventoryMovementType = 'INCOMING' | 'ADJUSTMENT'
+export type InventoryMovementType =
+  | 'INCOMING'
+  | 'ADJUSTMENT'
+  | 'SALE'
+  | 'REFUND'
+  | 'CANCELLATION'
 
 export interface InventoryUser {
   id: number
@@ -54,6 +59,22 @@ export interface InventoryPayload {
   wholesalePrice?: number
   supplierId: number
   expiredAt?: string | null
+}
+
+export interface InventoryProductOption {
+  id: number
+  name: string
+  reference: string
+}
+
+export interface InventorySupplierOption {
+  id: number
+  name: string
+}
+
+export interface InventoryFormOptions {
+  products: InventoryProductOption[]
+  suppliers: InventorySupplierOption[]
 }
 
 export interface ListInventoriesParams {
@@ -112,6 +133,10 @@ export function listInventories(
   }
 
   return requestJson<PaginatedInventories>(`/inventories?${searchParams}`)
+}
+
+export function getInventoryFormOptions(): Promise<InventoryFormOptions> {
+  return requestJson<InventoryFormOptions>('/inventories/form-options')
 }
 
 export function createInventory(

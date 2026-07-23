@@ -101,3 +101,31 @@ export async function requestEmpty(
     await handleErrorResponse(response)
   }
 }
+
+export async function requestBlob(
+  path: string,
+  init?: RequestInit,
+): Promise<Blob> {
+  let response: Response
+
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      credentials: 'include',
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        ...init?.headers,
+      },
+    })
+  } catch {
+    throw new Error(
+      'Impossible de contacter le serveur. Vérifiez que le backend est démarré.',
+    )
+  }
+
+  if (!response.ok) {
+    await handleErrorResponse(response)
+  }
+
+  return response.blob()
+}

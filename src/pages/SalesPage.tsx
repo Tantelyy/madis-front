@@ -92,6 +92,15 @@ export function SalesPage({ user }: { user: AuthenticatedUser }) {
               Ventes en attente de validation
             </button>
           ) : null}
+          {user.role === 'SELLER' ? (
+            <button
+              type="button"
+              onClick={() => navigate('/sales/approvals')}
+              className="rounded-lg bg-amber-500 px-4 py-3 text-sm font-bold text-amber-950 hover:bg-amber-400"
+            >
+              Ventes validées par ADMIN
+            </button>
+          ) : null}
         </div>
       </div>
 

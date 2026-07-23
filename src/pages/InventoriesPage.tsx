@@ -7,15 +7,16 @@ import { InventoryModal } from '../features/inventories/InventoryModal'
 import { InventoriesTable } from '../features/inventories/InventoriesTable'
 import {
   createInventory,
+  getInventoryFormOptions,
   listInventories,
   updateInventory,
   type Inventory,
+  type InventoryProductOption,
   type InventoryPayload,
+  type InventorySupplierOption,
   type ListInventoriesParams,
   type PaginatedInventories,
 } from '../features/inventories/inventoriesApi'
-import { listProducts, type Product } from '../features/products/productsApi'
-import { listSuppliers, type Supplier } from '../features/suppliers/suppliersApi'
 import { useListControls } from '../hooks/useListControls'
 import {
   createPaginationMeta,
@@ -23,7 +24,6 @@ import {
 } from '../utils/paginationMeta'
 
 const PAGE_SIZE = 10
-const SELECT_PAGE_SIZE = 100
 
 type InventoryModalState = { type: 'form'; inventory?: Inventory } | null
 
@@ -35,8 +35,8 @@ type SortableInventoryField = Extract<
 export function InventoriesPage() {
   const navigate = useNavigate()
   const [inventories, setInventories] = useState<Inventory[]>([])
-  const [products, setProducts] = useState<Product[]>([])
-  const [suppliers, setSuppliers] = useState<Supplier[]>([])
+  const [products, setProducts] = useState<InventoryProductOption[]>([])
+  const [suppliers, setSuppliers] = useState<InventorySupplierOption[]>([])
   const [meta, setMeta] = useState<PaginatedInventories['meta']>(() =>
     createPaginationMeta(PAGE_SIZE),
   )
@@ -78,30 +78,18 @@ export function InventoriesPage() {
 
     async function loadInventories(): Promise<void> {
       try {
-        const [inventoriesResponse, productsResponse, suppliersResponse] =
-          await Promise.all([
-            fetchInventories(),
-            listProducts({
-              page: 1,
-              limit: SELECT_PAGE_SIZE,
-              sortBy: 'name',
-              order: 'asc',
-            }),
-            listSuppliers({
-              page: 1,
-              limit: SELECT_PAGE_SIZE,
-              sortBy: 'name',
-              order: 'asc',
-            }),
-          ])
+        const [inventoriesResponse, formOptions] = await Promise.all([
+          fetchInventories(),
+          getInventoryFormOptions(),
+        ])
 
         if (!isActive) {
           return
         }
 
         applyInventoriesResponse(inventoriesResponse)
-        setProducts(productsResponse.data)
-        setSuppliers(suppliersResponse.data)
+        setProducts(formOptions.products)
+        setSuppliers(formOptions.suppliers)
       } catch (error) {
         if (!isActive) {
           return

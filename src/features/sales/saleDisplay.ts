@@ -19,6 +19,14 @@ export function formatSaleStatus(status: CartStatus): string {
   return SALE_STATUS_LABELS[status]
 }
 
+export function canGenerateSaleInvoice(status: CartStatus): boolean {
+  return (
+    status === 'PAID' ||
+    status === 'REFUNDED' ||
+    status === 'CANCELLED'
+  )
+}
+
 export function formatPaymentMethod(
   paymentMethod: PaymentMethod | null,
 ): string {

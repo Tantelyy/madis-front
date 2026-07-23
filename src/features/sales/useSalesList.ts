@@ -10,6 +10,7 @@ import {
 export function useSalesList(
   status: CartStatus | undefined,
   pageSize: number,
+  approvalQueue = false,
 ) {
   const [sales, setSales] = useState<Sale[]>([])
   const [meta, setMeta] = useState<PaginatedSales['meta']>(() =>
@@ -21,8 +22,8 @@ export function useSalesList(
   const [errorMessage, setErrorMessage] = useState<string>('')
 
   const fetchSales = useCallback(
-    () => listSales({ page, limit: pageSize, search, status }),
-    [page, pageSize, search, status],
+    () => listSales({ page, limit: pageSize, search, status, approvalQueue }),
+    [approvalQueue, page, pageSize, search, status],
   )
 
   const applySales = useCallback((response: PaginatedSales): void => {

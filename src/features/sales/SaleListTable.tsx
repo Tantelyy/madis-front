@@ -1,5 +1,8 @@
+import type { ReactNode } from 'react'
 import { formatDateTime, formatPrice } from '../../utils/displayFormatters'
+import { InvoiceDownloadButton } from './InvoiceDownloadButton'
 import {
+  canGenerateSaleInvoice,
   formatSaleStatus,
   saleStatusClassName,
 } from './saleDisplay'
@@ -9,12 +12,14 @@ interface SaleListTableProps {
   sales: Sale[]
   isLoading: boolean
   onSelect: (sale: Sale) => void
+  renderActions?: (sale: Sale) => ReactNode
 }
 
 export function SaleListTable({
   sales,
   isLoading,
   onSelect,
+  renderActions,
 }: SaleListTableProps) {
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -27,7 +32,7 @@ export function SaleListTable({
             <th className="px-4 py-3">Vendeur</th>
             <th className="px-4 py-3">Statut</th>
             <th className="px-4 py-3 text-right">Total</th>
-            <th className="px-4 py-3 text-right">Action</th>
+            <th className="px-4 py-3 text-right">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
@@ -57,7 +62,7 @@ export function SaleListTable({
                   {formatDateTime(sale.createdAt)}
                 </td>
                 <td className="px-4 py-4 text-slate-700">
-                  {sale.customerName}
+                  {sale.customerName ?? '-'}
                 </td>
                 <td className="px-4 py-4 text-slate-700">
                   {sale.seller?.userName ?? '-'}
@@ -72,17 +77,23 @@ export function SaleListTable({
                 <td className="whitespace-nowrap px-4 py-4 text-right font-bold text-slate-950">
                   {formatPrice(sale.totalPrice)}
                 </td>
-                <td className="px-4 py-4 text-right">
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      onSelect(sale)
-                    }}
-                    className="rounded-lg border border-teal-200 px-3 py-2 font-semibold text-teal-700 hover:bg-teal-100"
-                  >
-                    Voir les détails
-                  </button>
+                <td
+                  className="px-4 py-4"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <div className="flex justify-end gap-2">
+                    {canGenerateSaleInvoice(sale.status) ? (
+                      <InvoiceDownloadButton sale={sale} />
+                    ) : null}
+                    {renderActions?.(sale)}
+                    <button
+                      type="button"
+                      onClick={() => onSelect(sale)}
+                      className="rounded-lg border border-slate-200 px-3 py-2 font-semibold text-slate-600 hover:bg-slate-100"
+                    >
+                      Voir les détails
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))

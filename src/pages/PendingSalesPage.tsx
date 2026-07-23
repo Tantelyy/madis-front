@@ -5,12 +5,7 @@ import { Pagination } from '../components/Pagination'
 import { InventoryModal } from '../features/inventories/InventoryModal'
 import { SaleDetails } from '../features/sales/SaleDetails'
 import { SaleListTable } from '../features/sales/SaleListTable'
-import {
-  PAYMENT_METHOD_OPTIONS,
-  validateSale,
-  type PaymentMethod,
-  type Sale,
-} from '../features/sales/salesApi'
+import { validateSale, type Sale } from '../features/sales/salesApi'
 import { useSalesList } from '../features/sales/useSalesList'
 
 const PAGE_SIZE = 10
@@ -20,8 +15,6 @@ export function PendingSalesPage() {
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null)
   const [successMessage, setSuccessMessage] = useState<string>('')
   const [isValidating, setIsValidating] = useState<boolean>(false)
-  const [paymentMethod, setPaymentMethod] =
-    useState<PaymentMethod>('CASH')
   const {
     sales,
     meta,
@@ -50,11 +43,10 @@ export function PendingSalesPage() {
     setErrorMessage('')
 
     try {
-      await validateSale(
-        selectedSale.id,
-        selectedSale.paymentMethod ?? paymentMethod,
+      await validateSale(selectedSale.id)
+      setSuccessMessage(
+        `Vente n°${selectedSale.id} validée. Le vendeur peut maintenant la finaliser.`,
       )
-      setSuccessMessage(`Vente n°${selectedSale.id} validée et payée.`)
       setSelectedSale(null)
       await refresh()
     } catch (error) {
@@ -79,7 +71,7 @@ export function PendingSalesPage() {
             Ventes en attente de validation
           </h1>
           <p className="mt-2 text-sm text-slate-500">
-            Cliquez sur une vente pour consulter toutes ses lignes avant validation.
+            Consultez chaque demande de prix de gros avant de la valider.
           </p>
         </div>
         <button
@@ -129,37 +121,14 @@ export function PendingSalesPage() {
           <SaleDetails
             sale={selectedSale}
             actions={
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                {selectedSale.paymentMethod === null ? (
-                  <label className="text-sm font-medium text-slate-700">
-                    Moyen de paiement
-                    <select
-                      value={paymentMethod}
-                      onChange={(event) =>
-                        setPaymentMethod(event.target.value as PaymentMethod)
-                      }
-                      disabled={isValidating}
-                      className="mt-1 w-full rounded-lg border border-slate-200 px-4 py-3 sm:w-56"
-                    >
-                      {PAYMENT_METHOD_OPTIONS.map((method) => (
-                        <option key={method.value} value={method.value}>
-                          {method.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={() => void handleValidate()}
-                  disabled={isValidating}
-                  className="rounded-lg bg-teal-700 px-5 py-3 font-semibold text-white hover:bg-teal-800 disabled:bg-teal-300"
-                >
-                  {isValidating
-                    ? 'Validation...'
-                    : 'Valider et marquer payée'}
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => void handleValidate()}
+                disabled={isValidating}
+                className="rounded-lg bg-teal-700 px-5 py-3 font-semibold text-white hover:bg-teal-800 disabled:bg-teal-300"
+              >
+                {isValidating ? 'Validation...' : 'Valider la vente'}
+              </button>
             }
           />
         </InventoryModal>

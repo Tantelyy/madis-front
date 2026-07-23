@@ -12,6 +12,24 @@ export function formatRoundedPrice(value: string | number): string {
   }).format(Math.round(Number(value)))
 }
 
-export function formatMovementType(type: 'INCOMING' | 'ADJUSTMENT'): string {
-  return type === 'INCOMING' ? 'Entrée' : 'Ajustement'
+export const INVENTORY_MOVEMENT_TYPE_OPTIONS: readonly {
+  value: InventoryMovementType
+  label: string
+}[] = [
+  { value: 'INCOMING', label: 'Entrée' },
+  { value: 'ADJUSTMENT', label: 'Ajustement' },
+  { value: 'SALE', label: 'Vente' },
+  { value: 'REFUND', label: 'Remboursement' },
+  { value: 'CANCELLATION', label: 'Annulation' },
+]
+
+const INVENTORY_MOVEMENT_TYPE_LABELS: Readonly<
+  Record<InventoryMovementType, string>
+> = Object.fromEntries(
+  INVENTORY_MOVEMENT_TYPE_OPTIONS.map(({ value, label }) => [value, label]),
+) as Record<InventoryMovementType, string>
+
+export function formatMovementType(type: InventoryMovementType): string {
+  return INVENTORY_MOVEMENT_TYPE_LABELS[type]
 }
+import type { InventoryMovementType } from './inventoriesApi'
