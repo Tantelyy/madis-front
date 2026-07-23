@@ -17,9 +17,9 @@ export function SaleDetails({
   return (
     <div className="space-y-6">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Detail label="Client" value={sale.customerName} />
-        <Detail label="Contact" value={sale.customerContact} />
-        <Detail label="Adresse" value={sale.customerAddress} />
+        <Detail label="Client" value={sale.customerName ?? '-'} />
+        <Detail label="Contact" value={sale.customerContact ?? '-'} />
+        <Detail label="Adresse" value={sale.customerAddress ?? '-'} />
         <Detail label="Vendeur" value={sale.seller?.userName ?? '-'} />
         <Detail label="Créée le" value={formatDateTime(sale.createdAt)} />
         <Detail

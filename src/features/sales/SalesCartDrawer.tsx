@@ -1,8 +1,10 @@
-import { useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useMemo, useState, type ChangeEvent } from 'react'
+import type { AuthenticatedUser } from '../../auth/authApi'
 import { Alert } from '../../components/Alert'
 import { formatPrice } from '../../utils/displayFormatters'
 import {
   createSale,
+  downloadSaleInvoice,
   paySale,
   PAYMENT_METHOD_OPTIONS,
   type PaymentMethod,
@@ -11,65 +13,119 @@ import { calculateCartPricing } from './cartPricing'
 import { useSalesCart } from './salesCart'
 
 interface SalesCartDrawerProps {
+  user: AuthenticatedUser
   onClose: () => void
 }
 
-export function SalesCartDrawer({ onClose }: SalesCartDrawerProps) {
+type CheckoutStep = 'CART' | 'CHOICE' | 'INVOICE'
+
+export function SalesCartDrawer({ user, onClose }: SalesCartDrawerProps) {
   const { items, updateItem, removeItem, clearCart } = useSalesCart()
+  const [step, setStep] = useState<CheckoutStep>('CART')
   const [customerName, setCustomerName] = useState<string>('')
   const [customerContact, setCustomerContact] = useState<string>('')
   const [customerAddress, setCustomerAddress] = useState<string>('')
-  const [paymentMethod, setPaymentMethod] =
-    useState<PaymentMethod>('CASH')
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH')
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const [errorMessage, setErrorMessage] = useState<string>('')
   const [successMessage, setSuccessMessage] = useState<string>('')
   const cartPricing = useMemo(() => calculateCartPricing(items), [items])
+  const requiresAdminApproval =
+    user.role === 'SELLER' && items.some((item) => item.wholesale)
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault()
+  function saleItems() {
+    return items.map((item) => ({
+      productId: item.product.id,
+      quantity: item.quantity,
+      wholesale: item.wholesale,
+    }))
+  }
+
+  function resetCheckout(): void {
+    clearCart()
+    setStep('CART')
+    setCustomerName('')
+    setCustomerContact('')
+    setCustomerAddress('')
+  }
+
+  async function sendApprovalRequest(): Promise<void> {
     setIsSubmitting(true)
     setErrorMessage('')
     setSuccessMessage('')
 
     try {
-      const sale = await createSale({
-        customerName,
-        customerContact,
-        customerAddress,
-        paymentMethod,
-        items: items.map((item) => ({
-          productId: item.product.id,
-          quantity: item.quantity,
-          wholesale: item.wholesale,
-        })),
-      })
-
-      if (sale.status === 'VALIDATED') {
-        try {
-          await paySale(sale.id, paymentMethod)
-          setSuccessMessage(`Vente n°${sale.id} payée avec succès.`)
-        } catch (error) {
-          setErrorMessage(
-            error instanceof Error
-              ? `${error.message} La vente n°${sale.id} reste disponible dans les ventes à payer.`
-              : `La vente n°${sale.id} reste disponible dans les ventes à payer.`,
-          )
-        }
-      } else {
-        setSuccessMessage(
-          `Vente n°${sale.id} envoyée pour validation administrative.`,
-        )
-      }
-
-      clearCart()
-      setCustomerName('')
-      setCustomerContact('')
-      setCustomerAddress('')
+      const sale = await createSale({ items: saleItems() })
+      resetCheckout()
+      setSuccessMessage(
+        `Vente n°${sale.id} envoyée pour validation administrative.`,
+      )
     } catch (error) {
       setErrorMessage(
         error instanceof Error
           ? error.message
+          : "Impossible d'envoyer la demande.",
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  async function completeSale(withInvoice: boolean): Promise<void> {
+    setIsSubmitting(true)
+    setErrorMessage('')
+    setSuccessMessage('')
+    let createdSaleId: number | null = null
+
+    try {
+      const sale = await createSale({
+        paymentMethod,
+        customerName: withInvoice ? customerName : undefined,
+        customerContact: withInvoice ? customerContact : undefined,
+        customerAddress: withInvoice ? customerAddress : undefined,
+        items: saleItems(),
+      })
+      createdSaleId = sale.id
+
+      if (sale.status !== 'VALIDATED') {
+        throw new Error(
+          `La vente n°${sale.id} nécessite une validation administrative.`,
+        )
+      }
+
+      await paySale(sale.id, paymentMethod)
+      resetCheckout()
+      setSuccessMessage(`Vente n°${sale.id} marquée payée.`)
+
+      if (withInvoice) {
+        try {
+          await downloadSaleInvoice(sale.id, {
+            customerName,
+            customerContact,
+            customerAddress,
+          })
+          setSuccessMessage(
+            `Vente n°${sale.id} marquée payée et facture téléchargée.`,
+          )
+        } catch (error) {
+          setErrorMessage(
+            error instanceof Error
+              ? `${error.message} La vente reste marquée payée et sa facture peut être retéléchargée depuis l'historique.`
+              : `La facture n'a pas pu être téléchargée. La vente n°${sale.id} reste marquée payée.`,
+          )
+        }
+      }
+    } catch (error) {
+      if (createdSaleId !== null) {
+        resetCheckout()
+      }
+      setErrorMessage(
+        error instanceof Error
+          ? `${error.message}${
+              createdSaleId !== null
+                ? ` La vente n°${createdSaleId} est disponible dans l'historique.`
+                : ''
+            }`
           : "Impossible d'enregistrer la vente.",
       )
     } finally {
@@ -127,18 +183,18 @@ export function SalesCartDrawer({ onClose }: SalesCartDrawerProps) {
                       {item.product.name}
                     </h3>
                     <p className="mt-1 text-xs text-slate-500">
-                      {pricing.isWholesale
-                        ? 'Prix de gros'
-                        : 'Prix de détail'}
+                      {pricing.isWholesale ? 'Prix de gros' : 'Prix de détail'}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => removeItem(item.product.id)}
-                    className="text-sm font-semibold text-red-600 hover:text-red-700"
-                  >
-                    Supprimer
-                  </button>
+                  {step === 'CART' ? (
+                    <button
+                      type="button"
+                      onClick={() => removeItem(item.product.id)}
+                      className="text-sm font-semibold text-red-600 hover:text-red-700"
+                    >
+                      Supprimer
+                    </button>
+                  ) : null}
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-3">
                   <label className="text-sm font-medium text-slate-700">
@@ -147,6 +203,7 @@ export function SalesCartDrawer({ onClose }: SalesCartDrawerProps) {
                       type="number"
                       min="1"
                       value={item.quantity}
+                      disabled={step !== 'CART'}
                       onChange={(event) =>
                         handleQuantityChange(
                           item.product.id,
@@ -154,13 +211,14 @@ export function SalesCartDrawer({ onClose }: SalesCartDrawerProps) {
                           event,
                         )
                       }
-                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2"
+                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 disabled:bg-slate-100"
                     />
                   </label>
                   <label className="flex items-center gap-2 self-end rounded-lg bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">
                     <input
                       type="checkbox"
                       checked={item.wholesale}
+                      disabled={step !== 'CART'}
                       onChange={(event) =>
                         updateItem(
                           item.product.id,
@@ -172,7 +230,7 @@ export function SalesCartDrawer({ onClose }: SalesCartDrawerProps) {
                     Demande prix de gros
                   </label>
                 </div>
-                <div className="mt-4 grid grid-cols-2 gap-3 rounded-lg bg-slate-50 p-3">
+                <div className="mt-4 flex items-center justify-between rounded-lg bg-slate-50 p-3">
                   <div>
                     <p className="text-xs font-medium text-slate-500">
                       Prix unitaire
@@ -217,72 +275,169 @@ export function SalesCartDrawer({ onClose }: SalesCartDrawerProps) {
           )}
 
           {items.length > 0 ? (
-            <form
-              className="space-y-4 border-t border-slate-200 pt-5"
-              onSubmit={handleSubmit}
-            >
+            <div className="space-y-4 border-t border-slate-200 pt-5">
               <div className="flex items-center justify-between rounded-xl bg-teal-50 px-4 py-4">
-                <div>
-                  <p className="text-sm font-semibold text-teal-900">
-                    Total du panier
-                  </p>
-                  <p className="mt-1 text-xs text-teal-700">
-                    Montant confirm&eacute; lors de l&rsquo;enregistrement
-                  </p>
-                </div>
+                <p className="font-semibold text-teal-900">Total du panier</p>
                 <p className="text-xl font-bold text-teal-900">
                   {formatPrice(cartPricing.total)}
                 </p>
               </div>
-              <h3 className="font-bold text-slate-950">Informations client</h3>
-              <input
-                value={customerName}
-                onChange={(event) => setCustomerName(event.target.value)}
-                placeholder="Nom du client"
-                required
-                className="w-full rounded-lg border border-slate-200 px-4 py-3"
-              />
-              <input
-                value={customerContact}
-                onChange={(event) => setCustomerContact(event.target.value)}
-                placeholder="Contact"
-                required
-                className="w-full rounded-lg border border-slate-200 px-4 py-3"
-              />
-              <input
-                value={customerAddress}
-                onChange={(event) => setCustomerAddress(event.target.value)}
-                placeholder="Adresse"
-                required
-                className="w-full rounded-lg border border-slate-200 px-4 py-3"
-              />
-              <label className="block text-sm font-medium text-slate-700">
-                Moyen de paiement
-                <select
-                  value={paymentMethod}
-                  onChange={(event) =>
-                    setPaymentMethod(event.target.value as PaymentMethod)
-                  }
-                  className="mt-1 w-full rounded-lg border border-slate-200 px-4 py-3"
+
+              {step === 'CART' ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setErrorMessage('')
+                    setSuccessMessage('')
+                    setStep('CHOICE')
+                  }}
+                  className="w-full rounded-lg bg-teal-700 px-4 py-3 font-semibold text-white hover:bg-teal-800"
                 >
-                  {PAYMENT_METHOD_OPTIONS.map((method) => (
-                    <option key={method.value} value={method.value}>
-                      {method.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full rounded-lg bg-teal-700 px-4 py-3 font-semibold text-white hover:bg-teal-800 disabled:bg-teal-300"
-              >
-                {isSubmitting ? 'Traitement...' : 'Confirmer la vente'}
-              </button>
-            </form>
+                  Valider le panier
+                </button>
+              ) : null}
+
+              {step === 'CHOICE' && requiresAdminApproval ? (
+                <div className="space-y-4">
+                  <p className="rounded-lg bg-amber-50 p-4 text-sm text-amber-900">
+                    Une demande utilisant le prix de gros doit être validée par
+                    un administrateur avant son paiement.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void sendApprovalRequest()}
+                    disabled={isSubmitting}
+                    className="w-full rounded-lg bg-amber-500 px-4 py-3 font-semibold text-amber-950 hover:bg-amber-400 disabled:opacity-60"
+                  >
+                    {isSubmitting
+                      ? 'Envoi...'
+                      : 'Envoyer la demande vers un ADMIN'}
+                  </button>
+                </div>
+              ) : null}
+
+              {step === 'CHOICE' && !requiresAdminApproval ? (
+                <div className="space-y-4">
+                  <h3 className="text-center text-lg font-bold text-slate-950">
+                    Voulez-vous générer une facture pour ce panier ?
+                  </h3>
+                  <PaymentMethodSelect
+                    value={paymentMethod}
+                    onChange={setPaymentMethod}
+                    disabled={isSubmitting}
+                  />
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => setStep('INVOICE')}
+                      disabled={isSubmitting}
+                      className="rounded-lg border border-teal-600 px-4 py-3 font-semibold text-teal-700 hover:bg-teal-50"
+                    >
+                      Oui
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void completeSale(false)}
+                      disabled={isSubmitting}
+                      className="rounded-lg bg-teal-700 px-4 py-3 font-semibold text-white hover:bg-teal-800 disabled:bg-teal-300"
+                    >
+                      {isSubmitting
+                        ? 'Traitement...'
+                        : 'Non et marquer payé'}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              {step === 'INVOICE' ? (
+                <form
+                  className="space-y-4"
+                  onSubmit={(event) => {
+                    event.preventDefault()
+                    void completeSale(true)
+                  }}
+                >
+                  <h3 className="font-bold text-slate-950">
+                    Informations client
+                  </h3>
+                  <input
+                    value={customerName}
+                    onChange={(event) => setCustomerName(event.target.value)}
+                    placeholder="Nom du client *"
+                    required
+                    className="w-full rounded-lg border border-slate-200 px-4 py-3"
+                  />
+                  <input
+                    value={customerContact}
+                    onChange={(event) => setCustomerContact(event.target.value)}
+                    placeholder="Contact (optionnel)"
+                    className="w-full rounded-lg border border-slate-200 px-4 py-3"
+                  />
+                  <input
+                    value={customerAddress}
+                    onChange={(event) => setCustomerAddress(event.target.value)}
+                    placeholder="Adresse (optionnelle)"
+                    className="w-full rounded-lg border border-slate-200 px-4 py-3"
+                  />
+                  <PaymentMethodSelect
+                    value={paymentMethod}
+                    onChange={setPaymentMethod}
+                    disabled={isSubmitting}
+                  />
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full rounded-lg bg-teal-700 px-4 py-3 font-semibold text-white hover:bg-teal-800 disabled:bg-teal-300"
+                  >
+                    {isSubmitting ? 'Traitement...' : 'Marquer payé'}
+                  </button>
+                </form>
+              ) : null}
+
+              {step !== 'CART' ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setStep(step === 'INVOICE' ? 'CHOICE' : 'CART')
+                  }
+                  disabled={isSubmitting}
+                  className="w-full rounded-lg border border-slate-200 px-4 py-3 font-semibold text-slate-600 hover:bg-slate-50"
+                >
+                  Retour
+                </button>
+              ) : null}
+            </div>
           ) : null}
         </div>
       </div>
     </div>
+  )
+}
+
+function PaymentMethodSelect({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: PaymentMethod
+  onChange: (value: PaymentMethod) => void
+  disabled: boolean
+}) {
+  return (
+    <label className="block text-sm font-medium text-slate-700">
+      Moyen de paiement
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value as PaymentMethod)}
+        disabled={disabled}
+        className="mt-1 w-full rounded-lg border border-slate-200 px-4 py-3"
+      >
+        {PAYMENT_METHOD_OPTIONS.map((method) => (
+          <option key={method.value} value={method.value}>
+            {method.label}
+          </option>
+        ))}
+      </select>
+    </label>
   )
 }

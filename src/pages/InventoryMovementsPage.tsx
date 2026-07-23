@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { Alert } from '../components/Alert'
 import { Pagination } from '../components/Pagination'
 import { InventoryMovementsTable } from '../features/inventories/InventoryMovementsTable'
+import { INVENTORY_MOVEMENT_TYPE_OPTIONS } from '../features/inventories/inventoryFormatters'
 import {
   listInventoryMovements,
   type InventoryMovement,
@@ -152,8 +153,11 @@ export function InventoryMovementsPage() {
             className="mt-2 block w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-100"
           >
             <option value="">Tous les types</option>
-            <option value="INCOMING">Entrée</option>
-            <option value="ADJUSTMENT">Ajustement</option>
+            {INVENTORY_MOVEMENT_TYPE_OPTIONS.map((movementType) => (
+              <option key={movementType.value} value={movementType.value}>
+                {movementType.label}
+              </option>
+            ))}
           </select>
         </div>
       </div>

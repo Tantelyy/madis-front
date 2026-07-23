@@ -1,4 +1,6 @@
-import { requestJson } from '../../utils/apiClient'
+import { requestBlob, requestJson } from '../../utils/apiClient'
+import { downloadBlob } from '../../utils/fileDownload'
+import { listAllPages } from '../../utils/paginatedFetch'
 
 export type CartStatus =
   | 'PENDING'
@@ -73,9 +75,9 @@ export interface Sale {
   status: CartStatus
   validatedBy: number | null
   totalPrice: string
-  customerName: string
-  customerContact: string
-  customerAddress: string
+  customerName: string | null
+  customerContact: string | null
+  customerAddress: string | null
   paymentMethod: PaymentMethod | null
   reason: string | null
   cartDetails: SaleDetail[]
@@ -109,10 +111,10 @@ interface PaginationMeta {
 }
 
 export interface CreateSalePayload {
-  customerName: string
-  customerContact: string
-  customerAddress: string
-  paymentMethod: PaymentMethod
+  customerName?: string
+  customerContact?: string
+  customerAddress?: string
+  paymentMethod?: PaymentMethod
   items: {
     productId: number
     quantity: number
@@ -140,22 +142,9 @@ export function listSaleCatalog(params: {
 export async function listAllSaleCatalogProducts(): Promise<
   SaleCatalogProduct[]
 > {
-  const firstPage = await listSaleCatalog({ page: 1, limit: 100 })
-
-  if (firstPage.meta.totalPages <= 1) {
-    return firstPage.data
-  }
-
-  const remainingPages = await Promise.all(
-    Array.from({ length: firstPage.meta.totalPages - 1 }, (_, index) =>
-      listSaleCatalog({ page: index + 2, limit: 100 }),
-    ),
+  return listAllPages((page) =>
+    listSaleCatalog({ page, limit: 100 }),
   )
-
-  return [
-    ...firstPage.data,
-    ...remainingPages.flatMap((response) => response.data),
-  ]
 }
 
 export function createSale(payload: CreateSalePayload): Promise<Sale> {
@@ -170,6 +159,7 @@ export function listSales(params: {
   limit: number
   search?: string
   status?: CartStatus
+  approvalQueue?: boolean
 }): Promise<PaginatedSales> {
   const searchParams = new URLSearchParams({
     page: String(params.page),
@@ -182,6 +172,10 @@ export function listSales(params: {
 
   if (params.status) {
     searchParams.set('status', params.status)
+  }
+
+  if (params.approvalQueue) {
+    searchParams.set('approvalQueue', 'true')
   }
 
   return requestJson<PaginatedSales>(`/sales?${searchParams}`)
@@ -197,12 +191,26 @@ export function paySale(
   })
 }
 
-export function validateSale(
-  id: number,
-  paymentMethod: PaymentMethod,
-): Promise<Sale> {
+export function validateSale(id: number): Promise<Sale> {
   return requestJson<Sale>(`/sales/${id}/validate`, {
     method: 'POST',
-    body: JSON.stringify({ paymentMethod }),
   })
+}
+
+export interface InvoiceCustomer {
+  customerName?: string
+  customerContact?: string
+  customerAddress?: string
+}
+
+export async function downloadSaleInvoice(
+  id: number,
+  customer: InvoiceCustomer = {},
+): Promise<void> {
+  const invoice = await requestBlob(`/sales/${id}/invoice`, {
+    method: 'POST',
+    body: JSON.stringify(customer),
+  })
+
+  downloadBlob(invoice, `facture-${id}.pdf`)
 }

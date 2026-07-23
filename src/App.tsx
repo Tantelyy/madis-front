@@ -26,6 +26,7 @@ import { ProductsPage } from './pages/ProductsPage'
 import { PromotionsPage } from './pages/PromotionsPage'
 import { SalesPage } from './pages/SalesPage'
 import { SalesHistoryPage } from './pages/SalesHistoryPage'
+import { SellerApprovedSalesPage } from './pages/SellerApprovedSalesPage'
 import { SuppliersPage } from './pages/SuppliersPage'
 import { AdminRoute } from './routes/AdminRoute'
 
@@ -111,6 +112,16 @@ function App() {
             element={
               currentUser?.role === 'ADMIN' ? (
                 <PendingSalesPage />
+              ) : (
+                <Navigate to="/sales" replace />
+              )
+            }
+          />
+          <Route
+            path="/sales/approvals"
+            element={
+              currentUser?.role === 'SELLER' ? (
+                <SellerApprovedSalesPage />
               ) : (
                 <Navigate to="/sales" replace />
               )

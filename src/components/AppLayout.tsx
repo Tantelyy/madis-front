@@ -261,7 +261,10 @@ export function AppLayout({ user, onLogout }: AppLayoutProps) {
         </main>
       </div>
       {isCartOpen ? (
-        <SalesCartDrawer onClose={() => setIsCartOpen(false)} />
+        <SalesCartDrawer
+          user={user}
+          onClose={() => setIsCartOpen(false)}
+        />
       ) : null}
     </div>
   )
