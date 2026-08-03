@@ -12,9 +12,13 @@ export function consumeLoginRedirectMessage(): string {
   return message ?? ''
 }
 
+export function storeLoginRedirectMessage(message: string): void {
+  window.sessionStorage.setItem(LOGIN_REDIRECT_MESSAGE_KEY, message)
+}
+
 export function redirectToLogin(message: string): never {
   clearStoredUser()
-  window.sessionStorage.setItem(LOGIN_REDIRECT_MESSAGE_KEY, message)
+  storeLoginRedirectMessage(message)
 
   if (window.location.pathname !== '/login') {
     window.location.assign('/login')
