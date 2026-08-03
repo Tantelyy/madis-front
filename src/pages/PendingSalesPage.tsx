@@ -117,6 +117,7 @@ export function PendingSalesPage() {
           title={`Vente en attente n°${selectedSale.id}`}
           onClose={() => setSelectedSale(null)}
           size="xl"
+          errorMessage={errorMessage}
         >
           <SaleDetails
             sale={selectedSale}

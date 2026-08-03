@@ -30,9 +30,9 @@ interface ReferentialPanelProps<TItem extends ReferentialItem> {
   errorMessage: string
   successMessage: string
   getLabel: (item: TItem) => string
-  onCreate: (value: string) => Promise<void>
-  onUpdate: (item: TItem, value: string) => Promise<void>
-  onDelete: (item: TItem) => Promise<void>
+  onCreate: (value: string) => Promise<boolean>
+  onUpdate: (item: TItem, value: string) => Promise<boolean>
+  onDelete: (item: TItem) => Promise<boolean>
   onClearMessages: () => void
 }
 
@@ -118,13 +118,13 @@ export function ReferentialPanel<TItem extends ReferentialItem>({
       return
     }
 
-    if (modalState.item) {
-      await onUpdate(modalState.item, trimmedValue)
-    } else {
-      await onCreate(trimmedValue)
-    }
+    const succeeded = modalState.item
+      ? await onUpdate(modalState.item, trimmedValue)
+      : await onCreate(trimmedValue)
 
-    setModalState(null)
+    if (succeeded) {
+      setModalState(null)
+    }
   }
 
   async function handleDelete(): Promise<void> {
@@ -132,8 +132,9 @@ export function ReferentialPanel<TItem extends ReferentialItem>({
       return
     }
 
-    await onDelete(modalState.item)
-    setModalState(null)
+    if (await onDelete(modalState.item)) {
+      setModalState(null)
+    }
   }
 
   return (
@@ -234,6 +235,7 @@ export function ReferentialPanel<TItem extends ReferentialItem>({
         <ProductModal
           title={modalState.item ? `Modifier ${title}` : `Ajouter ${title}`}
           onClose={() => setModalState(null)}
+          errorMessage={errorMessage}
         >
           <form className="space-y-5" onSubmit={handleSubmit}>
             <TextField
@@ -258,6 +260,7 @@ export function ReferentialPanel<TItem extends ReferentialItem>({
         <ProductModal
           title="Confirmer la suppression"
           onClose={() => setModalState(null)}
+          errorMessage={errorMessage}
         >
           <div className="space-y-5">
             <p className="text-sm leading-6 text-slate-600">

@@ -6,6 +6,11 @@ const MARGIN_PERMISSIONS = ['ALL', 'CAN_MARGE'] as const
 const INVENTORY_PERMISSIONS = ['ALL', 'CAN_INVENTORY'] as const
 const ACCOUNT_PERMISSIONS = ['ALL', 'CAN_MANAGE_ACCOUNTS'] as const
 const SALE_PERMISSIONS = ['ALL', 'CAN_SELL'] as const
+const STOCK_VIEW_PERMISSIONS = [
+  'ALL',
+  'CAN_VIEW_STOCK',
+  'CAN_MANAGE_ACCOUNTS',
+] as const
 
 export function canSell(user: AuthenticatedUser | null): boolean {
   if (!user) {
@@ -84,6 +89,20 @@ export function canManageAccounts(user: AuthenticatedUser | null): boolean {
   )
 }
 
+export function canViewStock(user: AuthenticatedUser | null): boolean {
+  if (!user) {
+    return false
+  }
+
+  return (
+    user.role === 'ADMIN' ||
+    user.role === 'STOCK_MANAGER' ||
+    STOCK_VIEW_PERMISSIONS.some((permission) =>
+      user.permissions.includes(permission),
+    )
+  )
+}
+
 export function canAccessBackoffice(user: AuthenticatedUser | null): boolean {
   return (
     canManageSuppliers(user) ||
@@ -91,6 +110,7 @@ export function canAccessBackoffice(user: AuthenticatedUser | null): boolean {
     canManageMargin(user) ||
     canManageInventory(user) ||
     canManageAccounts(user) ||
+    canViewStock(user) ||
     canSell(user)
   )
 }

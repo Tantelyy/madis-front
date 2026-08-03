@@ -253,6 +253,7 @@ export function AccountsPage({ currentUserId }: AccountsPageProps) {
         <AccountModal
           title={modalState.account ? 'Modifier le compte' : 'Ajouter un compte'}
           onClose={() => setModalState(null)}
+          errorMessage={errorMessage}
         >
           <AccountForm
             account={modalState.account}
@@ -269,6 +270,7 @@ export function AccountsPage({ currentUserId }: AccountsPageProps) {
         <AccountModal
           title="Confirmer la désactivation"
           onClose={() => setModalState(null)}
+          errorMessage={errorMessage}
         >
           <div className="space-y-5">
             <p className="text-sm leading-6 text-slate-600">

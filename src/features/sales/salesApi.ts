@@ -78,6 +78,8 @@ export interface Sale {
   customerName: string | null
   customerContact: string | null
   customerAddress: string | null
+  customerNif: string | null
+  customerStat: string | null
   paymentMethod: PaymentMethod | null
   reason: string | null
   cartDetails: SaleDetail[]
@@ -114,6 +116,8 @@ export interface CreateSalePayload {
   customerName?: string
   customerContact?: string
   customerAddress?: string
+  customerNif?: string
+  customerStat?: string
   paymentMethod?: PaymentMethod
   items: {
     productId: number
@@ -220,6 +224,8 @@ export interface InvoiceCustomer {
   customerName?: string
   customerContact?: string
   customerAddress?: string
+  customerNif?: string
+  customerStat?: string
 }
 
 export async function downloadSaleInvoice(

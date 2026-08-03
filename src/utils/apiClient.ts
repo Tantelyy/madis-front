@@ -13,7 +13,7 @@ function isBackendErrorResponse(value: unknown): value is BackendErrorResponse {
 
 function formatBackendError(errorBody: unknown): string {
   if (!isBackendErrorResponse(errorBody)) {
-    return 'Une erreur est survenue. Veuillez reessayer.'
+    return 'Une erreur est survenue. Veuillez réessayer.'
   }
 
   if (Array.isArray(errorBody.message)) {
@@ -28,7 +28,7 @@ function formatBackendError(errorBody: unknown): string {
     return errorBody.error
   }
 
-  return 'Une erreur est survenue. Veuillez reessayer.'
+  return 'Une erreur est survenue. Veuillez réessayer.'
 }
 
 async function readErrorBody(response: Response): Promise<unknown> {

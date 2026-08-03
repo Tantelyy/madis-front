@@ -366,6 +366,7 @@ export function ProductsPage() {
             modalState.product ? 'Modifier le produit' : 'Ajouter un produit'
           }
           onClose={() => setModalState(null)}
+          errorMessage={errorMessage}
         >
           <ProductForm
             product={modalState.product}
@@ -388,6 +389,7 @@ export function ProductsPage() {
         <ProductModal
           title="Confirmer la suppression"
           onClose={() => setModalState(null)}
+          errorMessage={errorMessage}
         >
           <div className="space-y-5">
             <p className="text-sm leading-6 text-slate-600">

@@ -25,6 +25,8 @@ export function SalesCartDrawer({ user, onClose }: SalesCartDrawerProps) {
   const [customerName, setCustomerName] = useState<string>('')
   const [customerContact, setCustomerContact] = useState<string>('')
   const [customerAddress, setCustomerAddress] = useState<string>('')
+  const [customerNif, setCustomerNif] = useState<string>('')
+  const [customerStat, setCustomerStat] = useState<string>('')
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH')
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const [errorMessage, setErrorMessage] = useState<string>('')
@@ -47,6 +49,8 @@ export function SalesCartDrawer({ user, onClose }: SalesCartDrawerProps) {
     setCustomerName('')
     setCustomerContact('')
     setCustomerAddress('')
+    setCustomerNif('')
+    setCustomerStat('')
   }
 
   async function sendApprovalRequest(): Promise<void> {
@@ -83,6 +87,8 @@ export function SalesCartDrawer({ user, onClose }: SalesCartDrawerProps) {
         customerName: withInvoice ? customerName : undefined,
         customerContact: withInvoice ? customerContact : undefined,
         customerAddress: withInvoice ? customerAddress : undefined,
+        customerNif: withInvoice ? customerNif : undefined,
+        customerStat: withInvoice ? customerStat : undefined,
         items: saleItems(),
       })
       createdSaleId = sale.id
@@ -103,6 +109,8 @@ export function SalesCartDrawer({ user, onClose }: SalesCartDrawerProps) {
             customerName,
             customerContact,
             customerAddress,
+            customerNif,
+            customerStat,
           })
           setSuccessMessage(
             `Vente n°${sale.id} marquée payée et facture téléchargée.`,
@@ -379,6 +387,22 @@ export function SalesCartDrawer({ user, onClose }: SalesCartDrawerProps) {
                     placeholder="Adresse (optionnelle)"
                     className="w-full rounded-lg border border-slate-200 px-4 py-3"
                   />
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <input
+                      value={customerNif}
+                      onChange={(event) => setCustomerNif(event.target.value)}
+                      placeholder="NIF (optionnel)"
+                      aria-label="NIF du client"
+                      className="w-full rounded-lg border border-slate-200 px-4 py-3"
+                    />
+                    <input
+                      value={customerStat}
+                      onChange={(event) => setCustomerStat(event.target.value)}
+                      placeholder="STAT (optionnel)"
+                      aria-label="STAT du client"
+                      className="w-full rounded-lg border border-slate-200 px-4 py-3"
+                    />
+                  </div>
                   <PaymentMethodSelect
                     value={paymentMethod}
                     onChange={setPaymentMethod}

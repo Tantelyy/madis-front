@@ -5,8 +5,14 @@ import {
   canManageAccounts,
   canManageInventory,
   canSell,
+  canViewStock,
 } from './auth/accessControl'
 import { logout, type AuthenticatedUser } from './auth/authApi'
+import {
+  canRoleUseCurrentDevice,
+  DESKTOP_ONLY_ACCESS_MESSAGE,
+} from './auth/deviceAccess'
+import { storeLoginRedirectMessage } from './auth/loginRedirect'
 import {
   clearStoredUser,
   readStoredUser,
@@ -28,13 +34,25 @@ import { SalesPage } from './pages/SalesPage'
 import { SalesHistoryPage } from './pages/SalesHistoryPage'
 import { SellerApprovedSalesPage } from './pages/SellerApprovedSalesPage'
 import { SuppliersPage } from './pages/SuppliersPage'
+import { StockStatusPage } from './pages/StockStatusPage'
 import { AdminRoute } from './routes/AdminRoute'
+
+function readInitialUser(): AuthenticatedUser | null {
+  const storedUser = readStoredUser()
+
+  if (storedUser && !canRoleUseCurrentDevice(storedUser.role)) {
+    clearStoredUser()
+    storeLoginRedirectMessage(DESKTOP_ONLY_ACCESS_MESSAGE)
+    return null
+  }
+
+  return storedUser
+}
 
 function App() {
   const navigate = useNavigate()
-  const [currentUser, setCurrentUser] = useState<AuthenticatedUser | null>(() =>
-    readStoredUser(),
-  )
+  const [currentUser, setCurrentUser] =
+    useState<AuthenticatedUser | null>(readInitialUser)
 
   function handleLoginSuccess(user: AuthenticatedUser): void {
     if (canAccessBackoffice(user)) {
@@ -152,6 +170,16 @@ function App() {
             element={
               canManageInventory(currentUser) ? (
                 <InventoryMovementsPage />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+          <Route
+            path="/stock-status"
+            element={
+              canViewStock(currentUser) ? (
+                <StockStatusPage />
               ) : (
                 <Navigate to="/dashboard" replace />
               )

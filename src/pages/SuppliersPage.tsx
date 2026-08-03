@@ -245,6 +245,7 @@ export function SuppliersPage() {
               : 'Ajouter un fournisseur'
           }
           onClose={() => setModalState(null)}
+          errorMessage={errorMessage}
         >
           <SupplierForm
             supplier={modalState.supplier}
@@ -259,6 +260,7 @@ export function SuppliersPage() {
         <SupplierModal
           title="Confirmer la suppression"
           onClose={() => setModalState(null)}
+          errorMessage={errorMessage}
         >
           <div className="space-y-5">
             <p className="text-sm leading-6 text-slate-600">
