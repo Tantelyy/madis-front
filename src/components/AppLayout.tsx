@@ -10,6 +10,7 @@ import {
   canViewStock,
 } from '../auth/accessControl'
 import type { AuthenticatedUser } from '../auth/authApi'
+import { MADIS_BRANDING } from '../config/branding'
 import { SalesCartDrawer } from '../features/sales/SalesCartDrawer'
 import { useSalesCart } from '../features/sales/salesCart'
 
@@ -122,8 +123,12 @@ export function AppLayout({ user, onLogout }: AppLayoutProps) {
             isSidebarOpen ? 'gap-3 px-6' : 'justify-center px-3'
           }`}
         >
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-100 text-xl font-bold text-teal-800">
-            M
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+            <img
+              src={MADIS_BRANDING.logoPath}
+              alt="Logo Ma Distribution"
+              className="h-full w-full object-contain"
+            />
           </div>
           {isSidebarOpen ? (
             <>

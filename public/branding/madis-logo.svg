@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 120" role="img" aria-labelledby="title description">
-  <title id="title">Logo Ma Distribution</title>
-  <desc id="description">Logo temporaire de Ma Distribution</desc>
-  <rect width="120" height="120" rx="24" fill="#0f766e"/>
-  <path d="M28 84V36h15l17 25 17-25h15v48H77V59L60 83 43 59v25H28Z" fill="#fff"/>
-  <text x="140" y="57" fill="#0f172a" font-family="Arial, sans-serif" font-size="27" font-weight="700">MA</text>
-  <text x="140" y="88" fill="#0f766e" font-family="Arial, sans-serif" font-size="27" font-weight="700">DISTRIBUTION</text>
-</svg>

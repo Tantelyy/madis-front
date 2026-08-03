@@ -71,6 +71,19 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
         autoComplete="email"
         placeholder="nom@entreprise.com"
         required
+        leadingIcon={
+          <svg
+            viewBox="0 0 24 24"
+            className="h-5 w-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            aria-hidden="true"
+          >
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <path d="m4 7 8 6 8-6" />
+          </svg>
+        }
         onChange={handleChange}
       />
 
@@ -83,13 +96,26 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
         autoComplete="current-password"
         placeholder="Votre mot de passe"
         required
+        leadingIcon={
+          <svg
+            viewBox="0 0 24 24"
+            className="h-5 w-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            aria-hidden="true"
+          >
+            <rect x="4" y="10" width="16" height="11" rx="2" />
+            <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+          </svg>
+        }
         onChange={handleChange}
       />
 
       <button
         type="submit"
         disabled={isSubmitting}
-        className="flex w-full items-center justify-center rounded-lg bg-teal-700 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800 focus:outline-none focus:ring-4 focus:ring-teal-200 disabled:cursor-not-allowed disabled:bg-teal-300"
+        className="flex w-full items-center justify-center rounded-lg bg-gradient-to-r from-teal-700 to-teal-600 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-teal-900/10 transition hover:from-teal-800 hover:to-teal-700 focus:outline-none focus:ring-4 focus:ring-teal-200 disabled:cursor-not-allowed disabled:from-teal-300 disabled:to-teal-300"
       >
         {isSubmitting ? 'Connexion en cours...' : 'Se connecter'}
       </button>
