@@ -22,7 +22,7 @@ export function useSalesCart(): SalesCartContextValue {
   const context = useContext(SalesCartContext)
 
   if (!context) {
-    throw new Error('useSalesCart doit etre utilise dans SalesCartProvider.')
+    throw new Error('useSalesCart doit être utilisé dans SalesCartProvider.')
   }
 
   return context

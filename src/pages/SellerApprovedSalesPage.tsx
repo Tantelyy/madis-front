@@ -147,6 +147,7 @@ export function SellerApprovedSalesPage() {
         <InventoryModal
           title={`Paiement de la vente n°${saleToPay.id}`}
           onClose={() => setSaleToPay(null)}
+          errorMessage={errorMessage}
         >
           <div className="space-y-5">
             <p className="text-sm text-slate-600">

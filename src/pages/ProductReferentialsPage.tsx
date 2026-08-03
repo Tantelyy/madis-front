@@ -103,7 +103,7 @@ export function ProductReferentialsPage() {
   async function runMutation(
     action: () => Promise<void>,
     successMessageValue: string,
-  ): Promise<void> {
+  ): Promise<boolean> {
     setIsSubmitting(true)
     clearMessages()
 
@@ -111,10 +111,12 @@ export function ProductReferentialsPage() {
       await action()
       await loadReferentials()
       setSuccessMessage(successMessageValue)
+      return true
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : 'Opération impossible.',
       )
+      return false
     } finally {
       setIsSubmitting(false)
     }

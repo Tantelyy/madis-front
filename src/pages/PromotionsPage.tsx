@@ -282,6 +282,7 @@ export function PromotionsPage() {
           title={selectedOffer ? 'Modifier la promotion' : 'Nouvelle promotion'}
           onClose={() => setSelectedOffer(undefined)}
           size="lg"
+          errorMessage={errorMessage}
         >
           <SpecialOfferForm
             offer={selectedOffer ?? undefined}

@@ -3,7 +3,7 @@ export interface LoginCredentials {
   password: string
 }
 
-export type UserRole = 'ADMIN' | 'SELLER'
+export type UserRole = 'ADMIN' | 'SELLER' | 'STOCK_MANAGER'
 
 export interface AuthenticatedUser {
   id: number

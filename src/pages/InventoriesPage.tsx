@@ -226,6 +226,7 @@ export function InventoriesPage() {
               : 'Ajouter une entrée en stock'
           }
           onClose={() => setModalState(null)}
+          errorMessage={errorMessage}
         >
           <InventoryForm
             inventory={modalState.inventory}

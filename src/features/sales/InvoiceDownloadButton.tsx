@@ -23,6 +23,12 @@ export function InvoiceDownloadButton({
   const [customerAddress, setCustomerAddress] = useState<string>(
     sale.customerAddress ?? '',
   )
+  const [customerNif, setCustomerNif] = useState<string>(
+    sale.customerNif ?? '',
+  )
+  const [customerStat, setCustomerStat] = useState<string>(
+    sale.customerStat ?? '',
+  )
   const [errorMessage, setErrorMessage] = useState<string>('')
 
   async function generateInvoice(): Promise<void> {
@@ -34,6 +40,8 @@ export function InvoiceDownloadButton({
         customerName,
         customerContact,
         customerAddress,
+        customerNif,
+        customerStat,
       })
       setIsFormOpen(false)
     } catch (error) {
@@ -52,12 +60,8 @@ export function InvoiceDownloadButton({
   ): Promise<void> {
     event.stopPropagation()
 
-    if (!customerName.trim()) {
-      setIsFormOpen(true)
-      return
-    }
-
-    await generateInvoice()
+    setErrorMessage('')
+    setIsFormOpen(true)
   }
 
   return (
@@ -115,6 +119,24 @@ export function InvoiceDownloadButton({
                 className="mt-1 w-full rounded-lg border border-slate-200 px-4 py-3"
               />
             </label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm font-medium text-slate-700">
+                NIF
+                <input
+                  value={customerNif}
+                  onChange={(event) => setCustomerNif(event.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-200 px-4 py-3"
+                />
+              </label>
+              <label className="block text-sm font-medium text-slate-700">
+                STAT
+                <input
+                  value={customerStat}
+                  onChange={(event) => setCustomerStat(event.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-200 px-4 py-3"
+                />
+              </label>
+            </div>
             <div className="flex justify-end gap-3">
               <button
                 type="button"

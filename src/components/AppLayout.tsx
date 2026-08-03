@@ -7,6 +7,7 @@ import {
   canManageProducts,
   canManageSuppliers,
   canSell,
+  canViewStock,
 } from '../auth/accessControl'
 import type { AuthenticatedUser } from '../auth/authApi'
 import { SalesCartDrawer } from '../features/sales/SalesCartDrawer'
@@ -38,6 +39,11 @@ const navigationItems: readonly NavigationItem[] = [
     label: 'Produits',
     path: '/products',
     icon: 'P',
+  },
+  {
+    label: 'État du stock',
+    path: '/stock-status',
+    icon: 'ST',
   },
   {
     label: 'Vente',
@@ -85,6 +91,7 @@ export function AppLayout({ user, onLogout }: AppLayoutProps) {
       (item.path !== '/suppliers' || canManageSuppliers(user)) &&
       (item.path !== '/products' || canManageProducts(user)) &&
       (item.path !== '/inventories' || canManageInventory(user)) &&
+      (item.path !== '/stock-status' || canViewStock(user)) &&
       (item.path !== '/pricing-grid' || canManageMargin(user)) &&
       (item.path !== '/product-referentials' || canManageProducts(user)) &&
       (item.path !== '/accounts' || canManageAccounts(user)) &&

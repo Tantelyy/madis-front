@@ -1,5 +1,6 @@
 import type { AuthenticatedUser } from '../auth/authApi'
 import { LoginForm } from '../features/auth/LoginForm'
+import { MADIS_BRANDING } from '../config/branding'
 
 interface LoginPageProps {
   onLoginSuccess: (user: AuthenticatedUser) => void
@@ -11,15 +12,25 @@ export function LoginPage({ onLoginSuccess }: LoginPageProps) {
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-6xl items-center">
         <section className="grid w-full items-center gap-10 lg:grid-cols-[1fr_420px]">
           <div className="max-w-2xl">
-            <p className="mb-4 inline-flex rounded-full bg-teal-100 px-3 py-1 text-sm font-medium text-teal-800">
+            <div className="mb-8 inline-flex rounded-2xl bg-white p-4 shadow-lg shadow-slate-200/70">
+              <img
+                src={MADIS_BRANDING.logoPath}
+                alt="Ma Distribution"
+                className="h-20 w-auto max-w-full"
+              />
+            </div>
+            {/* <p className="mb-4 inline-flex rounded-full bg-teal-100 px-3 py-1 text-sm font-medium text-teal-800">
               Espace sécurisé
-            </p>
+            </p> */}
             <h1 className="text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl">
               Connectez-vous à votre espace de gestion.
             </h1>
             <p className="mt-5 max-w-xl text-base leading-7 text-slate-600">
               Accédez rapidement à vos outils avec votre adresse email et votre
               mot de passe.
+            </p>
+            <p className="mt-5 text-xl font-semibold italic text-teal-800">
+              « {MADIS_BRANDING.slogan} »
             </p>
           </div>
 

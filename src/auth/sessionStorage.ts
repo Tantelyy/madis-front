@@ -1,7 +1,7 @@
 import type { AuthenticatedUser, UserRole } from './authApi'
 
 const AUTH_USER_STORAGE_KEY = 'madis.auth.user'
-const userRoles: readonly UserRole[] = ['ADMIN', 'SELLER']
+const userRoles: readonly UserRole[] = ['ADMIN', 'SELLER', 'STOCK_MANAGER']
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
