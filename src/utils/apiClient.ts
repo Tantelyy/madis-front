@@ -54,15 +54,18 @@ export async function requestJson<TResponse>(
   init?: RequestInit,
 ): Promise<TResponse> {
   let response: Response
+  const isFormData = init?.body instanceof FormData
 
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
       credentials: 'include',
       ...init,
-      headers: {
-        'Content-Type': 'application/json',
-        ...init?.headers,
-      },
+      headers: isFormData
+        ? init?.headers
+        : {
+            'Content-Type': 'application/json',
+            ...init?.headers,
+          },
     })
   } catch {
     throw new Error(
