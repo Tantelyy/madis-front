@@ -77,6 +77,20 @@ export interface InventoryFormOptions {
   suppliers: InventorySupplierOption[]
 }
 
+export interface InventoryImportSummary {
+  rowsProcessed: number
+  rowsSkipped: number
+  inventoriesCreated: number
+  lotsSkipped: number
+  movementsCreated: number
+  productsCreated: number
+  marksCreated: number
+  specificationsCreated: number
+  formatsCreated: number
+  productTypesCreated: number
+  suppliersCreated: number
+}
+
 export interface ListInventoriesParams {
   page: number
   limit: number
@@ -145,6 +159,18 @@ export function createInventory(
   return requestJson<Inventory>('/inventories', {
     method: 'POST',
     body: JSON.stringify(payload),
+  })
+}
+
+export function importInventoriesCsv(
+  file: File,
+): Promise<InventoryImportSummary> {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  return requestJson<InventoryImportSummary>('/inventories/import', {
+    method: 'POST',
+    body: formData,
   })
 }
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Alert } from '../components/Alert'
+import { CsvImportButton } from '../components/CsvImportButton'
 import { Pagination } from '../components/Pagination'
 import { InventoryForm } from '../features/inventories/InventoryForm'
 import { InventoryModal } from '../features/inventories/InventoryModal'
@@ -8,6 +9,7 @@ import { InventoriesTable } from '../features/inventories/InventoriesTable'
 import {
   createInventory,
   getInventoryFormOptions,
+  importInventoriesCsv,
   listInventories,
   updateInventory,
   type Inventory,
@@ -42,6 +44,7 @@ export function InventoriesPage() {
   )
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+  const [isImporting, setIsImporting] = useState<boolean>(false)
   const [errorMessage, setErrorMessage] = useState<string>('')
   const [successMessage, setSuccessMessage] = useState<string>('')
   const [modalState, setModalState] = useState<InventoryModalState>(null)
@@ -149,6 +152,42 @@ export function InventoriesPage() {
     }
   }
 
+  async function handleImportCsv(file: File): Promise<void> {
+    setIsImporting(true)
+    setIsLoading(true)
+    setErrorMessage('')
+    setSuccessMessage('')
+
+    try {
+      const summary = await importInventoriesCsv(file)
+      const [inventoriesResponse, formOptions] = await Promise.all([
+        fetchInventories(),
+        getInventoryFormOptions(),
+      ])
+
+      applyInventoriesResponse(inventoriesResponse)
+      setProducts(formOptions.products)
+      setSuppliers(formOptions.suppliers)
+      setSuccessMessage(
+        `${summary.rowsProcessed} lignes traitées : ${summary.inventoriesCreated} lots importés avec leurs mouvements, ${summary.lotsSkipped} lots ignorés faute de prix net.`,
+      )
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Impossible d'importer le fichier CSV.",
+      )
+    } finally {
+      setIsImporting(false)
+      setIsLoading(false)
+    }
+  }
+
+  function handleImportValidationError(message: string): void {
+    setSuccessMessage('')
+    setErrorMessage(message)
+  }
+
   return (
     <section className="flex min-h-[calc(100vh-7rem)] flex-col gap-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -168,10 +207,16 @@ export function InventoriesPage() {
           >
             Historique global
           </button>
+          <CsvImportButton
+            isImporting={isImporting}
+            onSelect={handleImportCsv}
+            onValidationError={handleImportValidationError}
+          />
           <button
             type="button"
+            disabled={isImporting}
             onClick={() => setModalState({ type: 'form' })}
-            className="rounded-lg bg-teal-700 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800 focus:outline-none focus:ring-4 focus:ring-teal-200"
+            className="rounded-lg bg-teal-700 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800 focus:outline-none focus:ring-4 focus:ring-teal-200 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Ajouter une ligne
           </button>

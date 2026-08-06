@@ -1,11 +1,13 @@
-import { useEffect, useState, type ChangeEvent } from 'react'
+import { useCallback, useEffect, useState, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { AuthenticatedUser } from '../auth/authApi'
 import { Alert } from '../components/Alert'
+import { CsvImportButton } from '../components/CsvImportButton'
 import { Pagination } from '../components/Pagination'
 import { SaleProductCard } from '../features/sales/SaleProductCard'
 import {
   listSaleCatalog,
+  importSalesCsv,
   type PaginatedSaleCatalog,
   type SaleCatalogProduct,
 } from '../features/sales/salesApi'
@@ -21,20 +23,30 @@ export function SalesPage({ user }: { user: AuthenticatedUser }) {
   const [page, setPage] = useState<number>(1)
   const [search, setSearch] = useState<string>('')
   const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [isImporting, setIsImporting] = useState<boolean>(false)
   const [errorMessage, setErrorMessage] = useState<string>('')
+  const [successMessage, setSuccessMessage] = useState<string>('')
+
+  const fetchCatalog = useCallback((): Promise<PaginatedSaleCatalog> => {
+    return listSaleCatalog({
+      page,
+      limit: PAGE_SIZE,
+      search,
+    })
+  }, [page, search])
+
+  function applyCatalogResponse(response: PaginatedSaleCatalog): void {
+    setProducts(response.data)
+    setMeta(response.meta)
+  }
 
   useEffect(() => {
     let isActive = true
 
-    void listSaleCatalog({
-        page,
-        limit: PAGE_SIZE,
-        search,
-      })
+    void fetchCatalog()
       .then((response) => {
         if (isActive) {
-          setProducts(response.data)
-          setMeta(response.meta)
+          applyCatalogResponse(response)
         }
       })
       .catch((error: unknown) => {
@@ -55,12 +67,42 @@ export function SalesPage({ user }: { user: AuthenticatedUser }) {
     return () => {
       isActive = false
     }
-  }, [page, search])
+  }, [fetchCatalog])
 
   function handleSearchChange(event: ChangeEvent<HTMLInputElement>): void {
     setIsLoading(true)
     setSearch(event.target.value)
     setPage(1)
+  }
+
+  async function handleImportCsv(file: File): Promise<void> {
+    setIsImporting(true)
+    setIsLoading(true)
+    setErrorMessage('')
+    setSuccessMessage('')
+
+    try {
+      const summary = await importSalesCsv(file)
+
+      applyCatalogResponse(await fetchCatalog())
+      setSuccessMessage(
+        `${summary.rowsProcessed} lignes traitées : ${summary.salesCreated} ventes importées, ${summary.rowsNotSold} lignes non vendues et ${summary.rowsWithoutInventory} lignes sans lot correspondant ignorées.`,
+      )
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Impossible d'importer le fichier CSV.",
+      )
+    } finally {
+      setIsImporting(false)
+      setIsLoading(false)
+    }
+  }
+
+  function handleImportValidationError(message: string): void {
+    setSuccessMessage('')
+    setErrorMessage(message)
   }
 
   return (
@@ -76,6 +118,11 @@ export function SalesPage({ user }: { user: AuthenticatedUser }) {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
+          <CsvImportButton
+            isImporting={isImporting}
+            onSelect={handleImportCsv}
+            onValidationError={handleImportValidationError}
+          />
           <button
             type="button"
             onClick={() => navigate('/sales/history')}
@@ -105,6 +152,7 @@ export function SalesPage({ user }: { user: AuthenticatedUser }) {
       </div>
 
       {errorMessage ? <Alert type="error" message={errorMessage} /> : null}
+      {successMessage ? <Alert type="success" message={successMessage} /> : null}
 
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <input
