@@ -1,4 +1,5 @@
 import { requestEmpty, requestJson } from '../../utils/apiClient'
+import { listAllPages } from '../../utils/paginatedFetch'
 
 export type SpecialOfferType = 'REDUCTION' | 'BUY_X_GET_N'
 export type SpecialOfferUnit = 'PERCENT' | 'FIXED'
@@ -46,12 +47,16 @@ export interface PaginatedSpecialOffers {
   }
 }
 
-export function listSpecialOffers(params: {
+export interface ListSpecialOffersParams {
   page: number
   limit: number
   search?: string
   validAt?: string
-}): Promise<PaginatedSpecialOffers> {
+}
+
+export function listSpecialOffers(
+  params: ListSpecialOffersParams,
+): Promise<PaginatedSpecialOffers> {
   const searchParams = new URLSearchParams({
     page: String(params.page),
     limit: String(params.limit),
@@ -65,8 +70,14 @@ export function listSpecialOffers(params: {
     searchParams.set('validAt', params.validAt)
   }
 
-  return requestJson<PaginatedSpecialOffers>(
-    `/special-offers?${searchParams}`,
+  return requestJson<PaginatedSpecialOffers>(`/special-offers?${searchParams}`)
+}
+
+export function listAllSpecialOffers(
+  params: Omit<ListSpecialOffersParams, 'page' | 'limit'>,
+): Promise<SpecialOffer[]> {
+  return listAllPages((page) =>
+    listSpecialOffers({ ...params, page, limit: 100 }),
   )
 }
 

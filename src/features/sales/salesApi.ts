@@ -8,11 +8,7 @@ export type CartStatus =
   | 'PAID'
   | 'REFUNDED'
   | 'CANCELLED'
-export type PaymentMethod =
-  | 'MVOLA'
-  | 'AIRTEL_MONEY'
-  | 'ORANGE_MONEY'
-  | 'CASH'
+export type PaymentMethod = 'MVOLA' | 'AIRTEL_MONEY' | 'ORANGE_MONEY' | 'CASH'
 
 export const PAYMENT_METHOD_OPTIONS: readonly {
   value: PaymentMethod
@@ -154,9 +150,7 @@ export function listSaleCatalog(params: {
 export async function listAllSaleCatalogProducts(): Promise<
   SaleCatalogProduct[]
 > {
-  return listAllPages((page) =>
-    listSaleCatalog({ page, limit: 100 }),
-  )
+  return listAllPages((page) => listSaleCatalog({ page, limit: 100 }))
 }
 
 export function createSale(payload: CreateSalePayload): Promise<Sale> {
@@ -201,6 +195,14 @@ export function listSales(params: {
   }
 
   return requestJson<PaginatedSales>(`/sales?${searchParams}`)
+}
+
+export function listAllSales(params: {
+  search?: string
+  status?: CartStatus
+  approvalQueue?: boolean
+}): Promise<Sale[]> {
+  return listAllPages((page) => listSales({ ...params, page, limit: 100 }))
 }
 
 export function paySale(

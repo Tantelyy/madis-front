@@ -2,9 +2,16 @@ import { useCallback, useEffect, useState, type ChangeEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Alert } from '../components/Alert'
 import { Pagination } from '../components/Pagination'
+import { TabularExportButton } from '../components/TabularExportButton'
 import { InventoryMovementsTable } from '../features/inventories/InventoryMovementsTable'
-import { INVENTORY_MOVEMENT_TYPE_OPTIONS } from '../features/inventories/inventoryFormatters'
 import {
+  formatMovementType,
+  formatPrice,
+  formatRoundedPrice,
+  INVENTORY_MOVEMENT_TYPE_OPTIONS,
+} from '../features/inventories/inventoryFormatters'
+import {
+  listAllInventoryMovements,
   listInventoryMovements,
   type InventoryMovement,
   type InventoryMovementType,
@@ -14,8 +21,72 @@ import {
   createPaginationMeta,
   normalizePaginationMeta,
 } from '../utils/paginationMeta'
+import { formatDateTime, formatUser } from '../utils/displayFormatters'
+import { formatPdfAriary, type ExportColumn } from '../utils/tabularExport'
 
 const PAGE_SIZE = 10
+
+const MOVEMENT_EXPORT_COLUMNS: readonly ExportColumn<InventoryMovement>[] = [
+  {
+    header: 'Date',
+    value: (movement) => formatDateTime(movement.createdAt),
+    width: 2,
+  },
+  {
+    header: 'Type',
+    value: (movement) => formatMovementType(movement.type),
+    width: 2,
+  },
+  {
+    header: 'Produit',
+    value: (movement) =>
+      movement.inventory?.product?.name ?? `Stock #${movement.inventoryId}`,
+    width: 3,
+  },
+  {
+    header: 'Référence',
+    value: (movement) => movement.inventory?.product?.reference ?? '-',
+    width: 2,
+  },
+  {
+    header: 'Fournisseur',
+    value: (movement) => movement.inventory?.supplier?.name ?? '-',
+    width: 2,
+  },
+  {
+    header: 'Entrée',
+    value: (movement) => movement.incomingQuantity,
+    width: 1,
+  },
+  {
+    header: 'Sortie',
+    value: (movement) => movement.outgoingQuantity,
+    width: 1,
+  },
+  {
+    header: 'Prix achat (Ariary)',
+    value: (movement) => formatPrice(movement.purchasePrice),
+    pdfValue: (movement) => formatPdfAriary(movement.purchasePrice),
+    width: 2,
+  },
+  {
+    header: 'Prix détail (Ariary)',
+    value: (movement) => formatRoundedPrice(movement.salePrice),
+    pdfValue: (movement) => formatPdfAriary(movement.salePrice),
+    width: 2,
+  },
+  {
+    header: 'Prix gros (Ariary)',
+    value: (movement) => formatRoundedPrice(movement.wholesalePrice),
+    pdfValue: (movement) => formatPdfAriary(movement.wholesalePrice),
+    width: 2,
+  },
+  {
+    header: 'Acteur',
+    value: (movement) => formatUser(movement.actor),
+    width: 2,
+  },
+]
 
 export function InventoryMovementsPage() {
   const [searchParams] = useSearchParams()
@@ -42,9 +113,7 @@ export function InventoryMovementsPage() {
       })
     }, [inventoryId, page, search, type])
 
-  function applyMovementsResponse(
-    response: PaginatedInventoryMovements,
-  ): void {
+  function applyMovementsResponse(response: PaginatedInventoryMovements): void {
     setMovements(response.data)
     setMeta(normalizePaginationMeta(response.meta))
   }
@@ -112,12 +181,28 @@ export function InventoryMovementsPage() {
             Historique des stocks
           </h1>
         </div>
-        <Link
-          to="/inventories"
-          className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-teal-700 shadow-sm transition hover:bg-teal-50"
-        >
-          Retour au stock
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <TabularExportButton
+            currentRows={movements}
+            columns={MOVEMENT_EXPORT_COLUMNS}
+            title="Mouvements de stock"
+            fileNamePrefix="mouvements-stock"
+            isLoading={isLoading}
+            loadAllRows={() =>
+              listAllInventoryMovements({
+                search,
+                type: type || undefined,
+                inventoryId,
+              })
+            }
+          />
+          <Link
+            to="/inventories"
+            className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-teal-700 shadow-sm transition hover:bg-teal-50"
+          >
+            Retour au stock
+          </Link>
+        </div>
       </div>
 
       {errorMessage ? <Alert type="error" message={errorMessage} /> : null}

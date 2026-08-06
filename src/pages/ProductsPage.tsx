@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Alert } from '../components/Alert'
 import { Pagination } from '../components/Pagination'
+import { TabularExportButton } from '../components/TabularExportButton'
 import { ProductCard } from '../features/products/ProductCard'
 import { ProductDetails } from '../features/products/ProductDetails'
 import { ProductForm } from '../features/products/ProductForm'
@@ -12,6 +13,7 @@ import {
   createProductSpecification,
   createProductType,
   deleteProduct,
+  listAllProducts,
   listProductFormats,
   listProductMarks,
   listProducts,
@@ -33,8 +35,45 @@ import {
   normalizePaginationMeta,
 } from '../utils/paginationMeta'
 import { getSortLabel } from '../utils/sortLabel'
+import { displayValue, formatDateTime } from '../utils/displayFormatters'
+import type { ExportColumn } from '../utils/tabularExport'
 
 const PAGE_SIZE = 12
+
+const PRODUCT_EXPORT_COLUMNS: readonly ExportColumn<Product>[] = [
+  { header: 'Référence', value: (product) => product.reference, width: 2 },
+  { header: 'Libellé', value: (product) => product.name, width: 4 },
+  {
+    header: 'Type',
+    value: (product) => displayValue(product.productType?.type),
+    width: 2,
+  },
+  {
+    header: 'Spécification',
+    value: (product) => displayValue(product.specification?.specification),
+    width: 2,
+  },
+  {
+    header: 'Marque',
+    value: (product) => displayValue(product.mark?.name),
+    width: 2,
+  },
+  {
+    header: 'Format',
+    value: (product) => displayValue(product.format?.format),
+    width: 1,
+  },
+  {
+    header: 'Créé le',
+    value: (product) => formatDateTime(product.createdAt),
+    width: 2,
+  },
+  {
+    header: 'Mis à jour le',
+    value: (product) => formatDateTime(product.updatedAt),
+    width: 2,
+  },
+]
 
 type ProductModalState =
   | { type: 'details'; product: Product }
@@ -102,14 +141,19 @@ export function ProductsPage() {
 
     async function loadProducts(): Promise<void> {
       try {
-        const [productsResponse, marksResponse, specificationsResponse, formatsResponse, typesResponse] =
-          await Promise.all([
-            fetchProducts(),
-            listProductMarks(),
-            listProductSpecifications(),
-            listProductFormats(),
-            listProductTypes(),
-          ])
+        const [
+          productsResponse,
+          marksResponse,
+          specificationsResponse,
+          formatsResponse,
+          typesResponse,
+        ] = await Promise.all([
+          fetchProducts(),
+          listProductMarks(),
+          listProductSpecifications(),
+          listProductFormats(),
+          listProductTypes(),
+        ])
 
         if (!isActive) {
           return
@@ -257,17 +301,31 @@ export function ProductsPage() {
           </p>
           <h1 className="mt-2 text-3xl font-bold text-slate-950">Produits</h1>
         </div>
-        <button
-          type="button"
-          onClick={() => setModalState({ type: 'form' })}
-          className="rounded-lg bg-teal-700 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800 focus:outline-none focus:ring-4 focus:ring-teal-200"
-        >
-          Ajouter un produit
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <TabularExportButton
+            currentRows={products}
+            columns={PRODUCT_EXPORT_COLUMNS}
+            title="Liste des produits"
+            fileNamePrefix="produits"
+            isLoading={isLoading}
+            loadAllRows={() =>
+              listAllProducts({ search, sortBy, order: sortOrder })
+            }
+          />
+          <button
+            type="button"
+            onClick={() => setModalState({ type: 'form' })}
+            className="rounded-lg bg-teal-700 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800 focus:outline-none focus:ring-4 focus:ring-teal-200"
+          >
+            Ajouter un produit
+          </button>
+        </div>
       </div>
 
       {errorMessage ? <Alert type="error" message={errorMessage} /> : null}
-      {successMessage ? <Alert type="success" message={successMessage} /> : null}
+      {successMessage ? (
+        <Alert type="success" message={successMessage} />
+      ) : null}
 
       <div className="space-y-4">
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">

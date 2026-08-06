@@ -1,27 +1,26 @@
 import { useState, type FormEvent } from 'react'
-import { Modal } from '../../components/Modal'
+import { Modal } from './Modal'
 
-export type StockExportFormat = 'csv' | 'pdf'
-export type StockExportScope = 'current' | 'all'
+export type ExportFormat = 'csv' | 'pdf'
+export type ExportScope = 'current' | 'all'
 
-interface StockExportModalProps {
+interface ExportModalProps {
+  title: string
   isExporting: boolean
   errorMessage: string
   onClose: () => void
-  onExport: (
-    format: StockExportFormat,
-    scope: StockExportScope,
-  ) => Promise<void>
+  onExport: (format: ExportFormat, scope: ExportScope) => Promise<void>
 }
 
-export function StockExportModal({
+export function ExportModal({
+  title,
   isExporting,
   errorMessage,
   onClose,
   onExport,
-}: StockExportModalProps) {
-  const [format, setFormat] = useState<StockExportFormat>('csv')
-  const [scope, setScope] = useState<StockExportScope>('current')
+}: ExportModalProps) {
+  const [format, setFormat] = useState<ExportFormat>('csv')
+  const [scope, setScope] = useState<ExportScope>('current')
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault()
@@ -30,7 +29,7 @@ export function StockExportModal({
 
   return (
     <Modal
-      title="Exporter l’état du stock"
+      title={`Exporter — ${title}`}
       onClose={onClose}
       size="sm"
       errorMessage={errorMessage}
@@ -63,7 +62,7 @@ export function StockExportModal({
               onChange={() => setScope('current')}
             />
             <Choice
-              label="Toutes les pages"
+              label="Toutes les pages filtrées"
               name="scope"
               checked={scope === 'all'}
               onChange={() => setScope('all')}

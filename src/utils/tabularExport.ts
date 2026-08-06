@@ -3,7 +3,23 @@ import { downloadBlob } from './fileDownload'
 export interface ExportColumn<TRow> {
   header: string
   value: (row: TRow) => string | number
+  pdfValue?: (row: TRow) => string | number
   width?: number
+}
+
+export function formatPdfAriary(value: string | number): string {
+  const amount = Number(value)
+
+  if (!Number.isFinite(amount)) {
+    return '-'
+  }
+
+  return new Intl.NumberFormat('fr-FR', {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+  })
+    .format(amount)
+    .replace(/[\u00A0\u202F]/gu, ' ')
 }
 
 function escapeCsvCell(value: string | number): string {
@@ -47,32 +63,54 @@ export async function exportPdf<TRow>(
   const widths = columns.map(
     (column) => (availableWidth * (column.width ?? 1)) / configuredWidth,
   )
-  const rowHeight = 8
+  const minimumRowHeight = 8
+  const lineHeight = 3.5
   let y = 18
+
+  function splitCell(value: string | number, width: number): string[] {
+    return document.splitTextToSize(
+      String(value).replace(/[\u00A0\u202F]/gu, ' '),
+      Math.max(width - 4, 4),
+    ) as string[]
+  }
+
+  function calculateRowHeight(cells: readonly string[][]): number {
+    return Math.max(
+      minimumRowHeight,
+      ...cells.map((lines) => lines.length * lineHeight + 3),
+    )
+  }
 
   function drawHeader(): void {
     document.setFont('helvetica', 'bold')
     document.setFontSize(15)
     document.text(title, margin, y)
     y += 10
+    const headerCells = columns.map((column, index) =>
+      splitCell(column.header, widths[index]),
+    )
+    const headerHeight = calculateRowHeight(headerCells)
     document.setFillColor(15, 118, 110)
-    document.rect(margin, y - 5, availableWidth, rowHeight, 'F')
+    document.rect(margin, y - 5, availableWidth, headerHeight, 'F')
     document.setTextColor(255, 255, 255)
     document.setFontSize(9)
     let x = margin
-    columns.forEach((column, index) => {
-      document.text(column.header, x + 2, y, {
-        maxWidth: widths[index] - 4,
-      })
+    headerCells.forEach((lines, index) => {
+      document.text(lines, x + 2, y)
       x += widths[index]
     })
     document.setTextColor(15, 23, 42)
     document.setFont('helvetica', 'normal')
-    y += rowHeight
+    y += headerHeight
   }
 
   drawHeader()
   rows.forEach((row, rowIndex) => {
+    const cells = columns.map((column, index) =>
+      splitCell(column.pdfValue?.(row) ?? column.value(row), widths[index]),
+    )
+    const rowHeight = calculateRowHeight(cells)
+
     if (y + rowHeight > document.internal.pageSize.getHeight() - margin) {
       document.addPage()
       y = 18
@@ -83,10 +121,8 @@ export async function exportPdf<TRow>(
       document.rect(margin, y - 5, availableWidth, rowHeight, 'F')
     }
     let x = margin
-    columns.forEach((column, columnIndex) => {
-      document.text(String(column.value(row)), x + 2, y, {
-        maxWidth: widths[columnIndex] - 4,
-      })
+    cells.forEach((lines, columnIndex) => {
+      document.text(lines, x + 2, y)
       x += widths[columnIndex]
     })
     y += rowHeight
