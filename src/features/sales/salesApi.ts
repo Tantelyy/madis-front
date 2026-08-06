@@ -126,6 +126,14 @@ export interface CreateSalePayload {
   }[]
 }
 
+export interface SaleImportSummary {
+  rowsProcessed: number
+  rowsNotSold: number
+  rowsWithoutInventory: number
+  salesCreated: number
+  movementsCreated: number
+}
+
 export function listSaleCatalog(params: {
   page: number
   limit: number
@@ -155,6 +163,16 @@ export function createSale(payload: CreateSalePayload): Promise<Sale> {
   return requestJson<Sale>('/sales', {
     method: 'POST',
     body: JSON.stringify(payload),
+  })
+}
+
+export function importSalesCsv(file: File): Promise<SaleImportSummary> {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  return requestJson<SaleImportSummary>('/sales/import', {
+    method: 'POST',
+    body: formData,
   })
 }
 

@@ -1,16 +1,16 @@
 import { useRef, type ChangeEvent } from 'react'
 
-interface InventoryCsvImportButtonProps {
+interface CsvImportButtonProps {
   isImporting: boolean
   onSelect: (file: File) => Promise<void>
   onValidationError: (message: string) => void
 }
 
-export function InventoryCsvImportButton({
+export function CsvImportButton({
   isImporting,
   onSelect,
   onValidationError,
-}: InventoryCsvImportButtonProps) {
+}: CsvImportButtonProps) {
   const inputRef = useRef<HTMLInputElement>(null)
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>): void {

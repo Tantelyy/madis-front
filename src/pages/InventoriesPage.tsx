@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Alert } from '../components/Alert'
+import { CsvImportButton } from '../components/CsvImportButton'
 import { Pagination } from '../components/Pagination'
-import { InventoryCsvImportButton } from '../features/inventories/InventoryCsvImportButton'
 import { InventoryForm } from '../features/inventories/InventoryForm'
 import { InventoryModal } from '../features/inventories/InventoryModal'
 import { InventoriesTable } from '../features/inventories/InventoriesTable'
@@ -207,7 +207,7 @@ export function InventoriesPage() {
           >
             Historique global
           </button>
-          <InventoryCsvImportButton
+          <CsvImportButton
             isImporting={isImporting}
             onSelect={handleImportCsv}
             onValidationError={handleImportValidationError}
