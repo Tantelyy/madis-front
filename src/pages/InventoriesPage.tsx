@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Alert } from '../components/Alert'
 import { CsvImportButton } from '../components/CsvImportButton'
 import { Pagination } from '../components/Pagination'
+import { TabularExportButton } from '../components/TabularExportButton'
 import { InventoryForm } from '../features/inventories/InventoryForm'
 import { InventoryModal } from '../features/inventories/InventoryModal'
 import { InventoriesTable } from '../features/inventories/InventoriesTable'
@@ -10,6 +11,7 @@ import {
   createInventory,
   getInventoryFormOptions,
   importInventoriesCsv,
+  listAllInventories,
   listInventories,
   updateInventory,
   type Inventory,
@@ -24,8 +26,69 @@ import {
   createPaginationMeta,
   normalizePaginationMeta,
 } from '../utils/paginationMeta'
+import { formatDateTime } from '../utils/displayFormatters'
+import {
+  formatPrice,
+  formatRoundedPrice,
+} from '../features/inventories/inventoryFormatters'
+import { formatPdfAriary, type ExportColumn } from '../utils/tabularExport'
 
 const PAGE_SIZE = 10
+
+const INVENTORY_EXPORT_COLUMNS: readonly ExportColumn<Inventory>[] = [
+  {
+    header: 'Produit',
+    value: (inventory) =>
+      inventory.product?.name ?? `Produit #${inventory.productId}`,
+    width: 3,
+  },
+  {
+    header: 'Référence',
+    value: (inventory) => inventory.product?.reference ?? '-',
+    width: 2,
+  },
+  {
+    header: 'Fournisseur',
+    value: (inventory) =>
+      inventory.supplier?.name ?? `Fournisseur #${inventory.supplierId}`,
+    width: 2,
+  },
+  { header: 'Quantité', value: (inventory) => inventory.quantity, width: 1 },
+  {
+    header: 'Restant',
+    value: (inventory) => inventory.remainingQuantity,
+    width: 1,
+  },
+  {
+    header: 'Prix achat (Ariary)',
+    value: (inventory) => formatPrice(inventory.purchasePrice),
+    pdfValue: (inventory) => formatPdfAriary(inventory.purchasePrice),
+    width: 2,
+  },
+  {
+    header: 'Prix détail (Ariary)',
+    value: (inventory) => formatRoundedPrice(inventory.salePrice),
+    pdfValue: (inventory) => formatPdfAriary(inventory.salePrice),
+    width: 2,
+  },
+  {
+    header: 'Prix gros (Ariary)',
+    value: (inventory) => formatRoundedPrice(inventory.wholesalePrice),
+    pdfValue: (inventory) => formatPdfAriary(inventory.wholesalePrice),
+    width: 2,
+  },
+  {
+    header: 'Expiration',
+    value: (inventory) =>
+      inventory.expiredAt ? formatDateTime(inventory.expiredAt) : '-',
+    width: 2,
+  },
+  {
+    header: 'Entrée le',
+    value: (inventory) => formatDateTime(inventory.createdAt),
+    width: 2,
+  },
+]
 
 type InventoryModalState = { type: 'form'; inventory?: Inventory } | null
 
@@ -145,7 +208,7 @@ export function InventoriesPage() {
       setErrorMessage(
         error instanceof Error
           ? error.message
-            : "Impossible d'enregistrer la ligne de stock.",
+          : "Impossible d'enregistrer la ligne de stock.",
       )
     } finally {
       setIsSubmitting(false)
@@ -207,6 +270,16 @@ export function InventoriesPage() {
           >
             Historique global
           </button>
+          <TabularExportButton
+            currentRows={inventories}
+            columns={INVENTORY_EXPORT_COLUMNS}
+            title="Entrées en stock"
+            fileNamePrefix="entrees-stock"
+            isLoading={isLoading}
+            loadAllRows={() =>
+              listAllInventories({ search, sortBy, order: sortOrder })
+            }
+          />
           <CsvImportButton
             isImporting={isImporting}
             onSelect={handleImportCsv}
@@ -224,7 +297,9 @@ export function InventoriesPage() {
       </div>
 
       {errorMessage ? <Alert type="error" message={errorMessage} /> : null}
-      {successMessage ? <Alert type="success" message={successMessage} /> : null}
+      {successMessage ? (
+        <Alert type="success" message={successMessage} />
+      ) : null}
 
       <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <label
@@ -283,7 +358,6 @@ export function InventoriesPage() {
           />
         </InventoryModal>
       ) : null}
-
     </section>
   )
 }

@@ -1,4 +1,5 @@
 import { requestEmpty, requestJson } from '../../utils/apiClient'
+import { listAllPages } from '../../utils/paginatedFetch'
 
 export interface ProductUser {
   id: number
@@ -110,6 +111,12 @@ export function listProducts(
   }
 
   return requestJson<PaginatedProducts>(`/products?${searchParams}`)
+}
+
+export function listAllProducts(
+  params: Omit<ListProductsParams, 'page' | 'limit'>,
+): Promise<Product[]> {
+  return listAllPages((page) => listProducts({ ...params, page, limit: 100 }))
 }
 
 export function createProduct(payload: ProductPayload): Promise<Product> {

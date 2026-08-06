@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Alert } from '../components/Alert'
 import { Pagination } from '../components/Pagination'
+import { TabularExportButton } from '../components/TabularExportButton'
 import { SupplierDetails } from '../features/suppliers/SupplierDetails'
 import { SupplierForm } from '../features/suppliers/SupplierForm'
 import { SupplierModal } from '../features/suppliers/SupplierModal'
@@ -8,6 +9,7 @@ import { SuppliersTable } from '../features/suppliers/SuppliersTable'
 import {
   createSupplier,
   deleteSupplier,
+  listAllSuppliers,
   listSuppliers,
   updateSupplier,
   type ListSuppliersParams,
@@ -20,8 +22,39 @@ import {
   createPaginationMeta,
   normalizePaginationMeta,
 } from '../utils/paginationMeta'
+import { displayValue, formatDateTime } from '../utils/displayFormatters'
+import type { ExportColumn } from '../utils/tabularExport'
 
 const PAGE_SIZE = 10
+
+const SUPPLIER_EXPORT_COLUMNS: readonly ExportColumn<Supplier>[] = [
+  { header: 'Nom', value: (supplier) => supplier.name, width: 2 },
+  {
+    header: 'Adresse',
+    value: (supplier) => displayValue(supplier.address),
+    width: 3,
+  },
+  {
+    header: 'Email',
+    value: (supplier) => displayValue(supplier.email),
+    width: 2,
+  },
+  {
+    header: 'Téléphone',
+    value: (supplier) => displayValue(supplier.phone),
+    width: 2,
+  },
+  {
+    header: 'Créé le',
+    value: (supplier) => formatDateTime(supplier.createdAt),
+    width: 2,
+  },
+  {
+    header: 'Mis à jour le',
+    value: (supplier) => formatDateTime(supplier.updatedAt),
+    width: 2,
+  },
+]
 
 type SupplierModalState =
   | { type: 'details'; supplier: Supplier }
@@ -179,17 +212,31 @@ export function SuppliersPage() {
             Fournisseurs
           </h1>
         </div>
-        <button
-          type="button"
-          onClick={() => setModalState({ type: 'form' })}
-          className="rounded-lg bg-teal-700 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800 focus:outline-none focus:ring-4 focus:ring-teal-200"
-        >
-          Ajouter un fournisseur
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <TabularExportButton
+            currentRows={suppliers}
+            columns={SUPPLIER_EXPORT_COLUMNS}
+            title="Liste des fournisseurs"
+            fileNamePrefix="fournisseurs"
+            isLoading={isLoading}
+            loadAllRows={() =>
+              listAllSuppliers({ search, sortBy, order: sortOrder })
+            }
+          />
+          <button
+            type="button"
+            onClick={() => setModalState({ type: 'form' })}
+            className="rounded-lg bg-teal-700 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800 focus:outline-none focus:ring-4 focus:ring-teal-200"
+          >
+            Ajouter un fournisseur
+          </button>
+        </div>
       </div>
 
       {errorMessage ? <Alert type="error" message={errorMessage} /> : null}
-      {successMessage ? <Alert type="success" message={successMessage} /> : null}
+      {successMessage ? (
+        <Alert type="success" message={successMessage} />
+      ) : null}
 
       <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <label

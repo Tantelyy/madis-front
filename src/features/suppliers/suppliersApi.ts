@@ -1,4 +1,5 @@
 import { requestEmpty, requestJson } from '../../utils/apiClient'
+import { listAllPages } from '../../utils/paginatedFetch'
 
 export interface SupplierUser {
   id: number
@@ -63,6 +64,12 @@ export function listSuppliers(
   }
 
   return requestJson<PaginatedSuppliers>(`/suppliers?${searchParams}`)
+}
+
+export function listAllSuppliers(
+  params: Omit<ListSuppliersParams, 'page' | 'limit'>,
+): Promise<Supplier[]> {
+  return listAllPages((page) => listSuppliers({ ...params, page, limit: 100 }))
 }
 
 export function createSupplier(payload: SupplierPayload): Promise<Supplier> {

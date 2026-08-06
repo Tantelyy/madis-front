@@ -1,11 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Alert } from '../components/Alert'
 import { Pagination } from '../components/Pagination'
-import {
-  StockExportModal,
-  type StockExportFormat,
-  type StockExportScope,
-} from '../features/stocks/StockExportModal'
+import { TabularExportButton } from '../components/TabularExportButton'
 import { StockSummaryTable } from '../features/stocks/StockSummaryTable'
 import {
   listAllStockSummary,
@@ -19,11 +15,7 @@ import {
   createPaginationMeta,
   normalizePaginationMeta,
 } from '../utils/paginationMeta'
-import {
-  exportCsv,
-  exportPdf,
-  type ExportColumn,
-} from '../utils/tabularExport'
+import type { ExportColumn } from '../utils/tabularExport'
 
 const PAGE_SIZE = 10
 
@@ -46,9 +38,6 @@ export function StockStatusPage() {
   )
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [errorMessage, setErrorMessage] = useState<string>('')
-  const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false)
-  const [isExporting, setIsExporting] = useState<boolean>(false)
-  const [exportErrorMessage, setExportErrorMessage] = useState<string>('')
   const {
     page,
     search,
@@ -104,37 +93,6 @@ export function StockStatusPage() {
     }
   }, [fetchProducts])
 
-  async function handleExport(
-    format: StockExportFormat,
-    scope: StockExportScope,
-  ): Promise<void> {
-    setIsExporting(true)
-    setExportErrorMessage('')
-
-    try {
-      const rows =
-        scope === 'current'
-          ? products
-          : await listAllStockSummary({ search, sortBy, order: sortOrder })
-      const fileName = `etat-stock-${new Date().toISOString().slice(0, 10)}`
-
-      if (format === 'csv') {
-        exportCsv(rows, STOCK_EXPORT_COLUMNS, fileName)
-      } else {
-        await exportPdf(rows, STOCK_EXPORT_COLUMNS, 'État du stock', fileName)
-      }
-      setIsExportModalOpen(false)
-    } catch (error) {
-      setExportErrorMessage(
-        error instanceof Error
-          ? error.message
-          : 'Impossible d’exporter l’état du stock.',
-      )
-    } finally {
-      setIsExporting(false)
-    }
-  }
-
   return (
     <section className="flex min-h-[calc(100vh-7rem)] flex-col gap-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -149,17 +107,16 @@ export function StockStatusPage() {
             Quantités disponibles par produit et détail de chaque lot.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setExportErrorMessage('')
-            setIsExportModalOpen(true)
-          }}
-          disabled={isLoading || products.length === 0}
-          className="rounded-lg bg-teal-700 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-teal-300"
-        >
-          Exporter
-        </button>
+        <TabularExportButton
+          currentRows={products}
+          columns={STOCK_EXPORT_COLUMNS}
+          title="État du stock"
+          fileNamePrefix="etat-stock"
+          isLoading={isLoading}
+          loadAllRows={() =>
+            listAllStockSummary({ search, sortBy, order: sortOrder })
+          }
+        />
       </div>
 
       {errorMessage ? <Alert type="error" message={errorMessage} /> : null}
@@ -197,15 +154,6 @@ export function StockStatusPage() {
             onPageChange={handlePageChange}
           />
         </div>
-      ) : null}
-
-      {isExportModalOpen ? (
-        <StockExportModal
-          isExporting={isExporting}
-          errorMessage={exportErrorMessage}
-          onClose={() => setIsExportModalOpen(false)}
-          onExport={handleExport}
-        />
       ) : null}
     </section>
   )

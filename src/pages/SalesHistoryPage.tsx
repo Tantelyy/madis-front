@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import type { AuthenticatedUser } from '../auth/authApi'
 import { Alert } from '../components/Alert'
 import { Pagination } from '../components/Pagination'
+import { TabularExportButton } from '../components/TabularExportButton'
 import { InventoryModal } from '../features/inventories/InventoryModal'
 import { SaleDetails } from '../features/sales/SaleDetails'
 import { SaleListTable } from '../features/sales/SaleListTable'
@@ -11,12 +12,59 @@ import {
   type SaleReversalKind,
 } from '../features/sales/SaleReversalModal'
 import {
+  listAllSales,
   type CartStatus,
   type Sale,
 } from '../features/sales/salesApi'
 import { useSalesList } from '../features/sales/useSalesList'
+import {
+  formatPaymentMethod,
+  formatSaleStatus,
+} from '../features/sales/saleDisplay'
+import {
+  displayValue,
+  formatDateTime,
+  formatPrice,
+} from '../utils/displayFormatters'
+import { formatPdfAriary, type ExportColumn } from '../utils/tabularExport'
 
 const PAGE_SIZE = 10
+
+const SALE_EXPORT_COLUMNS: readonly ExportColumn<Sale>[] = [
+  { header: 'Vente', value: (sale) => sale.id, width: 1 },
+  { header: 'Date', value: (sale) => formatDateTime(sale.createdAt), width: 2 },
+  {
+    header: 'Client',
+    value: (sale) => displayValue(sale.customerName),
+    width: 2,
+  },
+  {
+    header: 'Contact',
+    value: (sale) => displayValue(sale.customerContact),
+    width: 2,
+  },
+  {
+    header: 'Vendeur',
+    value: (sale) => displayValue(sale.seller?.userName),
+    width: 2,
+  },
+  {
+    header: 'Statut',
+    value: (sale) => formatSaleStatus(sale.status),
+    width: 1,
+  },
+  {
+    header: 'Paiement',
+    value: (sale) => formatPaymentMethod(sale.paymentMethod),
+    width: 1,
+  },
+  {
+    header: 'Total (Ariary)',
+    value: (sale) => formatPrice(sale.totalPrice),
+    pdfValue: (sale) => formatPdfAriary(sale.totalPrice),
+    width: 2,
+  },
+]
 interface ReversalState {
   sale: Sale
   kind: SaleReversalKind
@@ -62,17 +110,29 @@ export function SalesHistoryPage({ user }: { user: AuthenticatedUser }) {
               : 'Vos ventes enregistrées dans le système.'}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => navigate('/sales')}
-          className="rounded-lg border border-slate-200 bg-white px-4 py-3 font-semibold text-teal-700 hover:bg-teal-50"
-        >
-          Retour à la vente
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <TabularExportButton
+            currentRows={sales}
+            columns={SALE_EXPORT_COLUMNS}
+            title="Historique des ventes"
+            fileNamePrefix="historique-ventes"
+            isLoading={isLoading}
+            loadAllRows={() => listAllSales({ search, status })}
+          />
+          <button
+            type="button"
+            onClick={() => navigate('/sales')}
+            className="rounded-lg border border-slate-200 bg-white px-4 py-3 font-semibold text-teal-700 hover:bg-teal-50"
+          >
+            Retour à la vente
+          </button>
+        </div>
       </div>
 
       {errorMessage ? <Alert type="error" message={errorMessage} /> : null}
-      {successMessage ? <Alert type="success" message={successMessage} /> : null}
+      {successMessage ? (
+        <Alert type="success" message={successMessage} />
+      ) : null}
 
       <div className="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_16rem]">
         <input
@@ -87,9 +147,9 @@ export function SalesHistoryPage({ user }: { user: AuthenticatedUser }) {
           value={status ?? ''}
           onChange={(event) => {
             setIsLoading(true)
-            setStatus((event.target.value || undefined) as
-              | CartStatus
-              | undefined)
+            setStatus(
+              (event.target.value || undefined) as CartStatus | undefined,
+            )
             setPage(1)
           }}
           aria-label="Filtrer par statut"

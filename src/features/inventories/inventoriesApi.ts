@@ -1,4 +1,5 @@
 import { requestJson } from '../../utils/apiClient'
+import { listAllPages } from '../../utils/paginatedFetch'
 import type { Product } from '../products/productsApi'
 import type { Supplier } from '../suppliers/suppliersApi'
 
@@ -149,13 +150,19 @@ export function listInventories(
   return requestJson<PaginatedInventories>(`/inventories?${searchParams}`)
 }
 
+export function listAllInventories(
+  params: Omit<ListInventoriesParams, 'page' | 'limit'>,
+): Promise<Inventory[]> {
+  return listAllPages((page) =>
+    listInventories({ ...params, page, limit: 100 }),
+  )
+}
+
 export function getInventoryFormOptions(): Promise<InventoryFormOptions> {
   return requestJson<InventoryFormOptions>('/inventories/form-options')
 }
 
-export function createInventory(
-  payload: InventoryPayload,
-): Promise<Inventory> {
+export function createInventory(payload: InventoryPayload): Promise<Inventory> {
   return requestJson<Inventory>('/inventories', {
     method: 'POST',
     body: JSON.stringify(payload),
@@ -206,6 +213,14 @@ export function listInventoryMovements(
 
   return requestJson<PaginatedInventoryMovements>(
     `/inventories/movements?${searchParams}`,
+  )
+}
+
+export function listAllInventoryMovements(
+  params: Omit<ListInventoryMovementsParams, 'page' | 'limit'>,
+): Promise<InventoryMovement[]> {
+  return listAllPages((page) =>
+    listInventoryMovements({ ...params, page, limit: 100 }),
   )
 }
 
