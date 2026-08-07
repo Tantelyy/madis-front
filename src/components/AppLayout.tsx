@@ -7,6 +7,7 @@ import {
   canManageProducts,
   canManageSuppliers,
   canSell,
+  canViewDashboard,
   canViewStock,
 } from '../auth/accessControl'
 import type { AuthenticatedUser } from '../auth/authApi'
@@ -90,6 +91,7 @@ export function AppLayout({ user, onLogout }: AppLayoutProps) {
   const visibleNavigationItems = navigationItems.filter(
     (item) =>
       (item.path !== '/suppliers' || canManageSuppliers(user)) &&
+      (item.path !== '/dashboard' || canViewDashboard(user)) &&
       (item.path !== '/products' || canManageProducts(user)) &&
       (item.path !== '/inventories' || canManageInventory(user)) &&
       (item.path !== '/stock-status' || canViewStock(user)) &&
