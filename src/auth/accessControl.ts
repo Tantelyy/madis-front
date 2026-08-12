@@ -123,7 +123,7 @@ export function canAccessBackoffice(user: AuthenticatedUser | null): boolean {
 }
 
 export function getHomePath(user: AuthenticatedUser | null): string {
-  if (canViewDashboard(user)) {
+  if (user?.role === 'ADMIN') {
     return '/dashboard'
   }
 

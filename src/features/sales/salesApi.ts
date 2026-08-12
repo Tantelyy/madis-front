@@ -1,6 +1,10 @@
 import { requestBlob, requestJson } from '../../utils/apiClient'
 import { downloadBlob } from '../../utils/fileDownload'
 import { listAllPages } from '../../utils/paginatedFetch'
+import {
+  appendDateRangeSearchParams,
+  type DateRangeParams,
+} from '../../utils/dateRange'
 
 export type CartStatus =
   | 'PENDING'
@@ -170,13 +174,15 @@ export function importSalesCsv(file: File): Promise<SaleImportSummary> {
   })
 }
 
-export function listSales(params: {
+export interface ListSalesParams extends DateRangeParams {
   page: number
   limit: number
   search?: string
   status?: CartStatus
   approvalQueue?: boolean
-}): Promise<PaginatedSales> {
+}
+
+export function listSales(params: ListSalesParams): Promise<PaginatedSales> {
   const searchParams = new URLSearchParams({
     page: String(params.page),
     limit: String(params.limit),
@@ -194,14 +200,14 @@ export function listSales(params: {
     searchParams.set('approvalQueue', 'true')
   }
 
+  appendDateRangeSearchParams(searchParams, params)
+
   return requestJson<PaginatedSales>(`/sales?${searchParams}`)
 }
 
-export function listAllSales(params: {
-  search?: string
-  status?: CartStatus
-  approvalQueue?: boolean
-}): Promise<Sale[]> {
+export function listAllSales(
+  params: Omit<ListSalesParams, 'page' | 'limit'>,
+): Promise<Sale[]> {
   return listAllPages((page) => listSales({ ...params, page, limit: 100 }))
 }
 

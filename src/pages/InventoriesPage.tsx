@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Alert } from '../components/Alert'
 import { CsvImportButton } from '../components/CsvImportButton'
+import { DateRangeFilter } from '../components/DateRangeFilter'
 import { Pagination } from '../components/Pagination'
 import { TabularExportButton } from '../components/TabularExportButton'
 import { InventoryForm } from '../features/inventories/InventoryForm'
@@ -22,6 +23,7 @@ import {
   type PaginatedInventories,
 } from '../features/inventories/inventoriesApi'
 import { useListControls } from '../hooks/useListControls'
+import { useDateRangeFilter } from '../hooks/useDateRangeFilter'
 import {
   createPaginationMeta,
   normalizePaginationMeta,
@@ -113,6 +115,7 @@ export function InventoriesPage() {
   const [modalState, setModalState] = useState<InventoryModalState>(null)
   const {
     page,
+    setPage,
     search,
     sortBy,
     sortOrder,
@@ -123,6 +126,7 @@ export function InventoriesPage() {
     initialSortBy: 'createdAt',
     onBeforeChange: () => setIsLoading(true),
   })
+  const dateRange = useDateRangeFilter()
 
   const fetchInventories = useCallback((): Promise<PaginatedInventories> => {
     return listInventories({
@@ -131,8 +135,32 @@ export function InventoriesPage() {
       search,
       sortBy,
       order: sortOrder,
+      startDate: dateRange.startDate,
+      endDate: dateRange.endDate,
     })
-  }, [page, search, sortBy, sortOrder])
+  }, [
+    dateRange.endDate,
+    dateRange.startDate,
+    page,
+    search,
+    sortBy,
+    sortOrder,
+  ])
+
+  function handleDateChange(
+    updateDate: (value: string) => void,
+    value: string,
+  ): void {
+    setIsLoading(true)
+    updateDate(value)
+    setPage(1)
+  }
+
+  function handleClearDates(): void {
+    setIsLoading(true)
+    dateRange.clearDateRange()
+    setPage(1)
+  }
 
   function applyInventoriesResponse(response: PaginatedInventories): void {
     setInventories(response.data)
@@ -277,7 +305,13 @@ export function InventoriesPage() {
             fileNamePrefix="entrees-stock"
             isLoading={isLoading}
             loadAllRows={() =>
-              listAllInventories({ search, sortBy, order: sortOrder })
+              listAllInventories({
+                search,
+                sortBy,
+                order: sortOrder,
+                startDate: dateRange.startDate,
+                endDate: dateRange.endDate,
+              })
             }
           />
           <CsvImportButton
@@ -301,7 +335,7 @@ export function InventoriesPage() {
         <Alert type="success" message={successMessage} />
       ) : null}
 
-      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <label
           htmlFor="inventory-search"
           className="block text-sm font-medium text-slate-700"
@@ -315,6 +349,18 @@ export function InventoriesPage() {
           onChange={handleSearchChange}
           placeholder="Produit, référence ou fournisseur"
           className="mt-2 block w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-600 focus:ring-4 focus:ring-teal-100 sm:w-[42rem]"
+        />
+        <DateRangeFilter
+          idPrefix="inventories"
+          startDate={dateRange.startDate}
+          endDate={dateRange.endDate}
+          onStartDateChange={(value) =>
+            handleDateChange(dateRange.setStartDate, value)
+          }
+          onEndDateChange={(value) =>
+            handleDateChange(dateRange.setEndDate, value)
+          }
+          onClear={handleClearDates}
         />
       </div>
 

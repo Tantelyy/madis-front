@@ -1,5 +1,9 @@
 import { requestJson } from '../../utils/apiClient'
 import { listAllPages } from '../../utils/paginatedFetch'
+import {
+  appendDateRangeSearchParams,
+  type DateRangeParams,
+} from '../../utils/dateRange'
 import type { Product } from '../products/productsApi'
 import type { Supplier } from '../suppliers/suppliersApi'
 
@@ -92,7 +96,7 @@ export interface InventoryImportSummary {
   suppliersCreated: number
 }
 
-export interface ListInventoriesParams {
+export interface ListInventoriesParams extends DateRangeParams {
   page: number
   limit: number
   search?: string
@@ -108,7 +112,7 @@ export interface ListInventoriesParams {
   order?: 'asc' | 'desc'
 }
 
-export interface ListInventoryMovementsParams {
+export interface ListInventoryMovementsParams extends DateRangeParams {
   page: number
   limit: number
   search?: string
@@ -146,6 +150,8 @@ export function listInventories(
   if (params.search?.trim()) {
     searchParams.set('search', params.search.trim())
   }
+
+  appendDateRangeSearchParams(searchParams, params)
 
   return requestJson<PaginatedInventories>(`/inventories?${searchParams}`)
 }
@@ -211,6 +217,8 @@ export function listInventoryMovements(
     searchParams.set('inventoryId', String(params.inventoryId))
   }
 
+  appendDateRangeSearchParams(searchParams, params)
+
   return requestJson<PaginatedInventoryMovements>(
     `/inventories/movements?${searchParams}`,
   )
@@ -240,6 +248,8 @@ export function listInventoryLineMovements(
   if (params.type) {
     searchParams.set('type', params.type)
   }
+
+  appendDateRangeSearchParams(searchParams, params)
 
   return requestJson<PaginatedInventoryMovements>(
     `/inventories/${inventoryId}/movements?${searchParams}`,

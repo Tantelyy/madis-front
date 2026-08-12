@@ -2,6 +2,7 @@ import { useState, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { AuthenticatedUser } from '../auth/authApi'
 import { Alert } from '../components/Alert'
+import { DateRangeFilter } from '../components/DateRangeFilter'
 import { Pagination } from '../components/Pagination'
 import { TabularExportButton } from '../components/TabularExportButton'
 import { InventoryModal } from '../features/inventories/InventoryModal'
@@ -17,6 +18,7 @@ import {
   type Sale,
 } from '../features/sales/salesApi'
 import { useSalesList } from '../features/sales/useSalesList'
+import { useDateRangeFilter } from '../hooks/useDateRangeFilter'
 import {
   formatPaymentMethod,
   formatSaleStatus,
@@ -72,6 +74,7 @@ interface ReversalState {
 
 export function SalesHistoryPage({ user }: { user: AuthenticatedUser }) {
   const navigate = useNavigate()
+  const dateRange = useDateRangeFilter()
   const [status, setStatus] = useState<CartStatus | undefined>(undefined)
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null)
   const [reversalState, setReversalState] = useState<ReversalState | null>(null)
@@ -86,11 +89,26 @@ export function SalesHistoryPage({ user }: { user: AuthenticatedUser }) {
     setSearch,
     setIsLoading,
     refresh,
-  } = useSalesList(status, PAGE_SIZE)
+  } = useSalesList(status, PAGE_SIZE, false, dateRange)
 
   function handleSearch(event: ChangeEvent<HTMLInputElement>): void {
     setIsLoading(true)
     setSearch(event.target.value)
+    setPage(1)
+  }
+
+  function handleDateChange(
+    updateDate: (value: string) => void,
+    value: string,
+  ): void {
+    setIsLoading(true)
+    updateDate(value)
+    setPage(1)
+  }
+
+  function handleClearDates(): void {
+    setIsLoading(true)
+    dateRange.clearDateRange()
     setPage(1)
   }
 
@@ -117,7 +135,14 @@ export function SalesHistoryPage({ user }: { user: AuthenticatedUser }) {
             title="Historique des ventes"
             fileNamePrefix="historique-ventes"
             isLoading={isLoading}
-            loadAllRows={() => listAllSales({ search, status })}
+            loadAllRows={() =>
+              listAllSales({
+                search,
+                status,
+                startDate: dateRange.startDate,
+                endDate: dateRange.endDate,
+              })
+            }
           />
           <button
             type="button"
@@ -134,8 +159,9 @@ export function SalesHistoryPage({ user }: { user: AuthenticatedUser }) {
         <Alert type="success" message={successMessage} />
       ) : null}
 
-      <div className="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_16rem]">
-        <input
+      <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="grid gap-4 md:grid-cols-[1fr_16rem]">
+          <input
           type="search"
           value={search}
           onChange={handleSearch}
@@ -143,7 +169,7 @@ export function SalesHistoryPage({ user }: { user: AuthenticatedUser }) {
           placeholder="Client, contact ou vendeur"
           className="w-full rounded-lg border border-slate-200 px-4 py-3 outline-none focus:border-teal-600 focus:ring-4 focus:ring-teal-100"
         />
-        <select
+          <select
           value={status ?? ''}
           onChange={(event) => {
             setIsLoading(true)
@@ -161,7 +187,20 @@ export function SalesHistoryPage({ user }: { user: AuthenticatedUser }) {
           <option value="PAID">Payée</option>
           <option value="REFUNDED">Remboursée</option>
           <option value="CANCELLED">Annulée</option>
-        </select>
+          </select>
+        </div>
+        <DateRangeFilter
+          idPrefix="sales"
+          startDate={dateRange.startDate}
+          endDate={dateRange.endDate}
+          onStartDateChange={(value) =>
+            handleDateChange(dateRange.setStartDate, value)
+          }
+          onEndDateChange={(value) =>
+            handleDateChange(dateRange.setEndDate, value)
+          }
+          onClear={handleClearDates}
+        />
       </div>
 
       <SaleListTable
