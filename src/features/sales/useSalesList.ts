@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createPaginationMeta } from '../../utils/paginationMeta'
+import type { DateRangeParams } from '../../utils/dateRange'
 import {
   listSales,
   type CartStatus,
@@ -11,7 +12,9 @@ export function useSalesList(
   status: CartStatus | undefined,
   pageSize: number,
   approvalQueue = false,
+  dateRange: DateRangeParams = {},
 ) {
+  const { startDate, endDate } = dateRange
   const [sales, setSales] = useState<Sale[]>([])
   const [meta, setMeta] = useState<PaginatedSales['meta']>(() =>
     createPaginationMeta(pageSize),
@@ -22,8 +25,25 @@ export function useSalesList(
   const [errorMessage, setErrorMessage] = useState<string>('')
 
   const fetchSales = useCallback(
-    () => listSales({ page, limit: pageSize, search, status, approvalQueue }),
-    [approvalQueue, page, pageSize, search, status],
+    () =>
+      listSales({
+        page,
+        limit: pageSize,
+        search,
+        status,
+        approvalQueue,
+        startDate,
+        endDate,
+      }),
+    [
+      approvalQueue,
+      endDate,
+      page,
+      pageSize,
+      search,
+      startDate,
+      status,
+    ],
   )
 
   const applySales = useCallback((response: PaginatedSales): void => {

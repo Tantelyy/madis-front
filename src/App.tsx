@@ -5,7 +5,9 @@ import {
   canManageAccounts,
   canManageInventory,
   canSell,
+  canViewDashboard,
   canViewStock,
+  getHomePath,
 } from './auth/accessControl'
 import { logout, type AuthenticatedUser } from './auth/authApi'
 import {
@@ -58,7 +60,7 @@ function App() {
     if (canAccessBackoffice(user)) {
       storeUser(user)
       setCurrentUser(user)
-      navigate('/dashboard', { replace: true })
+      navigate(getHomePath(user), { replace: true })
       return
     }
 
@@ -76,14 +78,16 @@ function App() {
     }
   }
 
+  const homePath = getHomePath(currentUser)
+
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<Navigate to={homePath} replace />} />
       <Route
         path="/login"
         element={
           canAccessBackoffice(currentUser) ? (
-            <Navigate to="/dashboard" replace />
+            <Navigate to={homePath} replace />
           ) : (
             <LoginPage onLoginSuccess={handleLoginSuccess} />
           )
@@ -102,7 +106,16 @@ function App() {
             </SalesCartProvider>
           }
         >
-          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route
+            path="/dashboard"
+            element={
+              canViewDashboard(currentUser) ? (
+                <DashboardPage />
+              ) : (
+                <Navigate to={homePath} replace />
+              )
+            }
+          />
           <Route path="/suppliers" element={<SuppliersPage />} />
           <Route path="/products" element={<ProductsPage />} />
           <Route
@@ -111,7 +124,7 @@ function App() {
               canSell(currentUser) && currentUser ? (
                 <SalesPage user={currentUser} />
               ) : (
-                <Navigate to="/dashboard" replace />
+                <Navigate to={homePath} replace />
               )
             }
           />
@@ -121,7 +134,7 @@ function App() {
               canSell(currentUser) && currentUser ? (
                 <SalesHistoryPage user={currentUser} />
               ) : (
-                <Navigate to="/dashboard" replace />
+                <Navigate to={homePath} replace />
               )
             }
           />
@@ -151,7 +164,7 @@ function App() {
               canSell(currentUser) ? (
                 <PromotionsPage />
               ) : (
-                <Navigate to="/dashboard" replace />
+                <Navigate to={homePath} replace />
               )
             }
           />
@@ -161,7 +174,7 @@ function App() {
               canManageInventory(currentUser) ? (
                 <InventoriesPage />
               ) : (
-                <Navigate to="/dashboard" replace />
+                <Navigate to={homePath} replace />
               )
             }
           />
@@ -171,7 +184,7 @@ function App() {
               canManageInventory(currentUser) ? (
                 <InventoryMovementsPage />
               ) : (
-                <Navigate to="/dashboard" replace />
+                <Navigate to={homePath} replace />
               )
             }
           />
@@ -181,7 +194,7 @@ function App() {
               canViewStock(currentUser) ? (
                 <StockStatusPage />
               ) : (
-                <Navigate to="/dashboard" replace />
+                <Navigate to={homePath} replace />
               )
             }
           />
@@ -196,13 +209,13 @@ function App() {
               canManageAccounts(currentUser) ? (
                 <AccountsPage currentUserId={currentUser?.id ?? null} />
               ) : (
-                <Navigate to="/dashboard" replace />
+                <Navigate to={homePath} replace />
               )
             }
           />
         </Route>
       </Route>
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to={homePath} replace />} />
     </Routes>
   )
 }

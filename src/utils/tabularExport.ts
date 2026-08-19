@@ -1,4 +1,5 @@
 import { downloadBlob } from './fileDownload'
+import { MADIS_BRANDING } from '../config/branding'
 
 export interface ExportColumn<TRow> {
   header: string
@@ -27,6 +28,52 @@ function escapeCsvCell(value: string | number): string {
   return /[";\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
 }
 
+function readBlobAsDataUrl(blob: Blob): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+
+    reader.addEventListener('load', () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result)
+      } else {
+        reject(new Error('Le logo ne peut pas être lu.'))
+      }
+    })
+    reader.addEventListener('error', () =>
+      reject(new Error('Le logo ne peut pas être lu.')),
+    )
+    reader.readAsDataURL(blob)
+  })
+}
+
+let brandLogoPromise: Promise<string | null> | null = null
+
+function loadBrandLogo(): Promise<string | null> {
+  brandLogoPromise ??= (async () => {
+    try {
+      const response = await fetch(MADIS_BRANDING.logoPath)
+
+      if (!response.ok) {
+        return null
+      }
+
+      return await readBlobAsDataUrl(await response.blob())
+    } catch {
+      return null
+    }
+  })()
+
+  return brandLogoPromise
+}
+
+function formatExportDate(value: Date): string {
+  return new Intl.DateTimeFormat('fr-FR', {
+    dateStyle: 'long',
+    timeStyle: 'short',
+    timeZone: 'Indian/Antananarivo',
+  }).format(value)
+}
+
 export function exportCsv<TRow>(
   rows: readonly TRow[],
   columns: readonly ExportColumn<TRow>[],
@@ -53,6 +100,8 @@ export async function exportPdf<TRow>(
 ): Promise<void> {
   const { jsPDF } = await import('jspdf')
   const document = new jsPDF({ orientation: 'landscape', unit: 'mm' })
+  const logo = await loadBrandLogo()
+  const exportedAt = formatExportDate(new Date())
   const pageWidth = document.internal.pageSize.getWidth()
   const margin = 14
   const availableWidth = pageWidth - margin * 2
@@ -65,7 +114,7 @@ export async function exportPdf<TRow>(
   )
   const minimumRowHeight = 8
   const lineHeight = 3.5
-  let y = 18
+  let y = 12
 
   function splitCell(value: string | number, width: number): string[] {
     return document.splitTextToSize(
@@ -82,9 +131,28 @@ export async function exportPdf<TRow>(
   }
 
   function drawHeader(): void {
+    if (logo) {
+      document.addImage(logo, margin, y, 14, 14)
+    } else {
+      document.setFillColor(15, 118, 110)
+      document.roundedRect(margin, y, 14, 14, 2, 2, 'F')
+      document.setTextColor(255, 255, 255)
+      document.setFont('helvetica', 'bold')
+      document.setFontSize(10)
+      document.text('M', margin + 7, y + 9.5, { align: 'center' })
+    }
+
+    y += 24
     document.setFont('helvetica', 'bold')
     document.setFontSize(15)
     document.text(title, margin, y)
+    document.setFont('helvetica', 'normal')
+    document.setFontSize(9)
+    document.setTextColor(71, 85, 105)
+    document.text(`Exporté le ${exportedAt}`, pageWidth - margin, y, {
+      align: 'right',
+    })
+    document.setTextColor(15, 23, 42)
     y += 10
     const headerCells = columns.map((column, index) =>
       splitCell(column.header, widths[index]),
@@ -113,7 +181,7 @@ export async function exportPdf<TRow>(
 
     if (y + rowHeight > document.internal.pageSize.getHeight() - margin) {
       document.addPage()
-      y = 18
+      y = 12
       drawHeader()
     }
     if (rowIndex % 2 === 1) {

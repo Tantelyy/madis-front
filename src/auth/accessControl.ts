@@ -70,9 +70,16 @@ export function canManageInventory(user: AuthenticatedUser | null): boolean {
 
   return (
     user.role === 'ADMIN' ||
+    user.role === 'STOCK_MANAGER' ||
     INVENTORY_PERMISSIONS.some((permission) =>
       user.permissions.includes(permission),
     )
+  )
+}
+
+export function canViewDashboard(user: AuthenticatedUser | null): boolean {
+  return Boolean(
+    user && (user.role === 'ADMIN' || user.permissions.includes('ALL')),
   )
 }
 
@@ -113,4 +120,48 @@ export function canAccessBackoffice(user: AuthenticatedUser | null): boolean {
     canViewStock(user) ||
     canSell(user)
   )
+}
+
+export function getHomePath(user: AuthenticatedUser | null): string {
+  if (user?.role === 'ADMIN') {
+    return '/dashboard'
+  }
+
+  if (user?.role === 'STOCK_MANAGER') {
+    return '/inventories'
+  }
+
+  if (user?.role === 'SELLER') {
+    return '/sales'
+  }
+
+  if (canManageInventory(user)) {
+    return '/inventories'
+  }
+
+  if (canSell(user)) {
+    return '/sales'
+  }
+
+  if (canManageSuppliers(user)) {
+    return '/suppliers'
+  }
+
+  if (canManageProducts(user)) {
+    return '/products'
+  }
+
+  if (canManageMargin(user)) {
+    return '/pricing-grid'
+  }
+
+  if (canManageAccounts(user)) {
+    return '/accounts'
+  }
+
+  if (canViewStock(user)) {
+    return '/stock-status'
+  }
+
+  return '/login'
 }

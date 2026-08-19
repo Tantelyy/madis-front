@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type ChangeEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Alert } from '../components/Alert'
+import { DateRangeFilter } from '../components/DateRangeFilter'
 import { Pagination } from '../components/Pagination'
 import { TabularExportButton } from '../components/TabularExportButton'
 import { InventoryMovementsTable } from '../features/inventories/InventoryMovementsTable'
@@ -23,6 +24,7 @@ import {
 } from '../utils/paginationMeta'
 import { formatDateTime, formatUser } from '../utils/displayFormatters'
 import { formatPdfAriary, type ExportColumn } from '../utils/tabularExport'
+import { useDateRangeFilter } from '../hooks/useDateRangeFilter'
 
 const PAGE_SIZE = 10
 
@@ -101,6 +103,7 @@ export function InventoryMovementsPage() {
   const [type, setType] = useState<InventoryMovementType | ''>('')
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [errorMessage, setErrorMessage] = useState<string>('')
+  const dateRange = useDateRangeFilter()
 
   const fetchMovements =
     useCallback((): Promise<PaginatedInventoryMovements> => {
@@ -110,8 +113,17 @@ export function InventoryMovementsPage() {
         search,
         type: type || undefined,
         inventoryId,
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate,
       })
-    }, [inventoryId, page, search, type])
+    }, [
+      dateRange.endDate,
+      dateRange.startDate,
+      inventoryId,
+      page,
+      search,
+      type,
+    ])
 
   function applyMovementsResponse(response: PaginatedInventoryMovements): void {
     setMovements(response.data)
@@ -170,6 +182,21 @@ export function InventoryMovementsPage() {
     setPage(nextPage)
   }
 
+  function handleDateChange(
+    updateDate: (value: string) => void,
+    value: string,
+  ): void {
+    setIsLoading(true)
+    updateDate(value)
+    setPage(1)
+  }
+
+  function handleClearDates(): void {
+    setIsLoading(true)
+    dateRange.clearDateRange()
+    setPage(1)
+  }
+
   return (
     <section className="flex min-h-[calc(100vh-7rem)] flex-col gap-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -193,6 +220,8 @@ export function InventoryMovementsPage() {
                 search,
                 type: type || undefined,
                 inventoryId,
+                startDate: dateRange.startDate,
+                endDate: dateRange.endDate,
               })
             }
           />
@@ -207,44 +236,58 @@ export function InventoryMovementsPage() {
 
       {errorMessage ? <Alert type="error" message={errorMessage} /> : null}
 
-      <div className="grid gap-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm lg:grid-cols-[minmax(0,1fr)_16rem]">
-        <div>
-          <label
-            htmlFor="inventory-movement-search"
-            className="block text-sm font-medium text-slate-700"
-          >
-            Rechercher dans l'historique
-          </label>
-          <input
-            id="inventory-movement-search"
-            type="search"
-            value={search}
-            onChange={handleSearchChange}
-            placeholder="Produit, référence, fournisseur ou utilisateur"
-            className="mt-2 block w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-600 focus:ring-4 focus:ring-teal-100"
-          />
+      <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_16rem]">
+          <div>
+            <label
+              htmlFor="inventory-movement-search"
+              className="block text-sm font-medium text-slate-700"
+            >
+              Rechercher dans l'historique
+            </label>
+            <input
+              id="inventory-movement-search"
+              type="search"
+              value={search}
+              onChange={handleSearchChange}
+              placeholder="Produit, référence, fournisseur ou utilisateur"
+              className="mt-2 block w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-600 focus:ring-4 focus:ring-teal-100"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="inventory-movement-type"
+              className="block text-sm font-medium text-slate-700"
+            >
+              Type de mouvement
+            </label>
+            <select
+              id="inventory-movement-type"
+              value={type}
+              onChange={handleTypeChange}
+              className="mt-2 block w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-100"
+            >
+              <option value="">Tous les types</option>
+              {INVENTORY_MOVEMENT_TYPE_OPTIONS.map((movementType) => (
+                <option key={movementType.value} value={movementType.value}>
+                  {movementType.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-        <div>
-          <label
-            htmlFor="inventory-movement-type"
-            className="block text-sm font-medium text-slate-700"
-          >
-            Type de mouvement
-          </label>
-          <select
-            id="inventory-movement-type"
-            value={type}
-            onChange={handleTypeChange}
-            className="mt-2 block w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-100"
-          >
-            <option value="">Tous les types</option>
-            {INVENTORY_MOVEMENT_TYPE_OPTIONS.map((movementType) => (
-              <option key={movementType.value} value={movementType.value}>
-                {movementType.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <DateRangeFilter
+          idPrefix="inventory-movements"
+          startDate={dateRange.startDate}
+          endDate={dateRange.endDate}
+          onStartDateChange={(value) =>
+            handleDateChange(dateRange.setStartDate, value)
+          }
+          onEndDateChange={(value) =>
+            handleDateChange(dateRange.setEndDate, value)
+          }
+          onClear={handleClearDates}
+        />
       </div>
 
       <InventoryMovementsTable movements={movements} isLoading={isLoading} />
