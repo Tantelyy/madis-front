@@ -8,46 +8,31 @@ import {
 } from '../features/dashboard/dashboardApi'
 import {
   createPresetPeriod,
-  formatDashboardPeriod,
   type DashboardFilter,
   type DashboardPeriod,
-  type DashboardPreset,
 } from '../features/dashboard/dashboardDateRange'
-import { CustomPeriodModal } from '../features/dashboard/CustomPeriodModal'
+import { DashboardPeriodFilter } from '../features/dashboard/DashboardPeriodFilter'
 import { ProfitabilityChart } from '../features/dashboard/ProfitabilityChart'
+import { SalesStockAnalysisSection } from '../features/dashboard/SalesStockAnalysisSection'
 import { formatPrice } from '../utils/displayFormatters'
-
-const FILTERS: readonly {
-  value: DashboardFilter
-  label: string
-}[] = [
-  { value: 'TODAY', label: "Aujourd'hui" },
-  { value: 'WEEK', label: 'Cette semaine' },
-  { value: 'MONTH', label: 'Ce mois' },
-  { value: 'YEAR', label: 'Cette année' },
-  { value: 'CUSTOM', label: 'Personnalisée' },
-]
 
 const GRANULARITY_CONTENT: Readonly<
   Record<
     ProfitabilityGranularity,
-    { title: string; description: string; column: string }
+    { title: string; description: string }
   >
 > = {
   HOUR: {
     title: 'Évolution par heure',
     description: 'Les opérations du jour sont regroupées par heure.',
-    column: 'Heure',
   },
   WEEK: {
     title: 'Évolution par semaine',
     description: 'La période est regroupée en semaines pour garder le graphique lisible.',
-    column: 'Semaine',
   },
   MONTH: {
     title: 'Évolution par mois',
     description: 'La période longue est regroupée par mois.',
-    column: 'Mois',
   },
 }
 
@@ -89,8 +74,6 @@ export function DashboardPage() {
   const [statistics, setStatistics] =
     useState<ProfitabilityStatistics | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(true)
-  const [isCustomModalOpen, setIsCustomModalOpen] =
-    useState<boolean>(false)
   const [errorMessage, setErrorMessage] = useState<string>('')
 
   useEffect(() => {
@@ -127,26 +110,15 @@ export function DashboardPage() {
     }
   }, [period])
 
-  function selectFilter(filter: DashboardFilter): void {
-    if (filter === 'CUSTOM') {
-      setIsCustomModalOpen(true)
-      return
-    }
-
+  function changePeriod(
+    filter: DashboardFilter,
+    nextPeriod: DashboardPeriod,
+  ): void {
     setIsLoading(true)
     setErrorMessage('')
     setStatistics(null)
     setActiveFilter(filter)
-    setPeriod(createPresetPeriod(filter as DashboardPreset))
-  }
-
-  function applyCustomPeriod(customPeriod: DashboardPeriod): void {
-    setIsLoading(true)
-    setErrorMessage('')
-    setStatistics(null)
-    setActiveFilter('CUSTOM')
-    setPeriod(customPeriod)
-    setIsCustomModalOpen(false)
+    setPeriod(nextPeriod)
   }
 
   const granularityContent = statistics
@@ -160,39 +132,23 @@ export function DashboardPage() {
           Accueil
         </p>
         <h1 className="mt-2 text-3xl font-bold text-slate-950">Dashboard</h1>
-        <p className="mt-2 text-sm text-slate-500">
+      </div>
+
+      <div>
+        <h2 className="text-2xl font-bold text-slate-950">
           Suivi de la rentabilité des ventes
+        </h2>
+        <p className="mt-2 text-sm text-slate-500">
+          Analysez les achats, le chiffre d’affaires et le bénéfice brut sur la
+          période choisie.
         </p>
       </div>
 
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <div className="flex flex-wrap gap-2" aria-label="Filtrer la période">
-          {FILTERS.map((filter) => {
-            const isActive = activeFilter === filter.value
-
-            return (
-              <button
-                key={filter.value}
-                type="button"
-                onClick={() => selectFilter(filter.value)}
-                aria-pressed={isActive}
-                className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-4 focus:ring-teal-100 ${
-                  isActive
-                    ? 'border-slate-950 bg-slate-950 text-white'
-                    : 'border-slate-200 bg-white text-slate-700 hover:border-teal-300 hover:bg-teal-50'
-                }`}
-              >
-                {filter.value === 'CUSTOM' ? <CalendarIcon /> : null}
-                {filter.label}
-              </button>
-            )
-          })}
-        </div>
-        <p className="inline-flex items-center gap-2 text-sm font-medium text-slate-500">
-          <CalendarIcon />
-          {formatDashboardPeriod(period, activeFilter)}
-        </p>
-      </div>
+      <DashboardPeriodFilter
+        activeFilter={activeFilter}
+        period={period}
+        onChange={changePeriod}
+      />
 
       {errorMessage ? <Alert type="error" message={errorMessage} /> : null}
 
@@ -226,128 +182,23 @@ export function DashboardPage() {
       </div>
 
       {statistics && granularityContent ? (
-        <>
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-            <div>
-              <h2 className="text-2xl font-bold text-slate-950">
-                {granularityContent.title}
-              </h2>
-              <p className="mt-2 text-sm text-slate-500">
-                {granularityContent.description}
-              </p>
-            </div>
-            <div className="mt-5">
-              <ProfitabilityChart points={statistics.points} />
-            </div>
-          </section>
-
-          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="px-5 pb-3 pt-5 sm:px-6">
-              <h2 className="text-xl font-bold text-slate-950">
-                Détail de vérification
-              </h2>
-            </div>
-            <div className="overflow-x-auto px-5 pb-5 sm:px-6">
-              <table className="w-full min-w-[760px] border-collapse text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 text-left text-slate-700">
-                    <th className="py-3 pr-4 font-semibold">
-                      {granularityContent.column}
-                    </th>
-                    <th className="px-4 py-3 text-right font-semibold">Achats</th>
-                    <th className="px-4 py-3 text-right font-semibold">CA</th>
-                    <th className="px-4 py-3 text-right font-semibold">
-                      Coût vendu
-                    </th>
-                    <th className="py-3 pl-4 text-right font-semibold">
-                      Bénéfice brut
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {statistics.points.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={5}
-                        className="py-8 text-center text-slate-500"
-                      >
-                        Aucune opération sur cette période.
-                      </td>
-                    </tr>
-                  ) : (
-                    statistics.points.map((point) => (
-                      <tr
-                        key={point.key}
-                        className="border-b border-slate-100 text-slate-700"
-                      >
-                        <td className="py-3 pr-4">{point.label}</td>
-                        <AmountCell value={point.purchaseAmount} />
-                        <AmountCell value={point.revenue} />
-                        <AmountCell value={point.costOfGoodsSold} />
-                        <AmountCell value={point.profit} isProfit />
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t border-slate-300 font-bold text-slate-950">
-                    <td className="py-4 pr-4">Total</td>
-                    <AmountCell value={statistics.totals.purchaseAmount} />
-                    <AmountCell value={statistics.totals.revenue} />
-                    <AmountCell value={statistics.totals.costOfGoodsSold} />
-                    <AmountCell value={statistics.totals.profit} isProfit />
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </section>
-        </>
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-950">
+              {granularityContent.title}
+            </h2>
+            <p className="mt-2 text-sm text-slate-500">
+              {granularityContent.description}
+            </p>
+          </div>
+          <div className="mt-5">
+            <ProfitabilityChart points={statistics.points} />
+          </div>
+        </section>
       ) : null}
 
-      {isCustomModalOpen ? (
-        <CustomPeriodModal
-          initialPeriod={period}
-          onApply={applyCustomPeriod}
-          onClose={() => setIsCustomModalOpen(false)}
-        />
-      ) : null}
+      <SalesStockAnalysisSection />
     </section>
-  )
-}
-
-function AmountCell({
-  value,
-  isProfit = false,
-}: {
-  value: string
-  isProfit?: boolean
-}) {
-  const isNegativeProfit = isProfit && Number(value) < 0
-
-  return (
-    <td
-      className={`px-4 py-3 text-right tabular-nums last:pr-0 ${
-        isNegativeProfit ? 'text-red-700' : ''
-      }`}
-    >
-      {formatPrice(value)}
-    </td>
-  )
-}
-
-function CalendarIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-4 w-4 shrink-0"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-    >
-      <rect x="3" y="5" width="18" height="16" rx="2" />
-      <path d="M8 3v4M16 3v4M3 10h18" />
-    </svg>
   )
 }
 
