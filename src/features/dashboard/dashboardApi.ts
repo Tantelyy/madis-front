@@ -55,6 +55,19 @@ export interface SalesStockParams {
   productTypeId?: number
 }
 
+export interface StockValueByProductType {
+  productTypeId: number
+  productType: string
+  value: string
+  percentage: string
+}
+
+export interface StockFinancialValue {
+  stockAsOf: string
+  totalValue: string
+  byProductType: StockValueByProductType[]
+}
+
 export function getProfitabilityStatistics(
   period: DashboardPeriod,
   signal?: AbortSignal,
@@ -83,6 +96,12 @@ export function getSalesStockAnalysis(
     `/dashboard/sales-stock?${searchParams}`,
     { signal },
   )
+}
+
+export function getStockFinancialValue(
+  signal?: AbortSignal,
+): Promise<StockFinancialValue> {
+  return requestJson<StockFinancialValue>('/dashboard/stock-value', { signal })
 }
 
 function createPeriodSearchParams(period: DashboardPeriod): URLSearchParams {

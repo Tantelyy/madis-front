@@ -14,6 +14,7 @@ import {
 import { DashboardPeriodFilter } from '../features/dashboard/DashboardPeriodFilter'
 import { ProfitabilityChart } from '../features/dashboard/ProfitabilityChart'
 import { SalesStockAnalysisSection } from '../features/dashboard/SalesStockAnalysisSection'
+import { StockFinancialValueSection } from '../features/dashboard/StockFinancialValueSection'
 import { formatPrice } from '../utils/displayFormatters'
 
 const GRANULARITY_CONTENT: Readonly<
@@ -198,6 +199,8 @@ export function DashboardPage() {
       ) : null}
 
       <SalesStockAnalysisSection />
+
+      <StockFinancialValueSection />
     </section>
   )
 }
