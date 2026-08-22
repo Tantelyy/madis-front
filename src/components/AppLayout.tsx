@@ -21,6 +21,7 @@ interface NavigationItem {
   label: string
   path: string
   icon: AppIconName
+  canAccess: (user: AuthenticatedUser) => boolean
 }
 
 interface AppLayoutProps {
@@ -33,51 +34,67 @@ const navigationItems: readonly NavigationItem[] = [
     label: 'Dashboard',
     path: '/dashboard',
     icon: 'dashboard',
+    canAccess: canViewDashboard,
   },
   {
     label: 'Fournisseurs',
     path: '/suppliers',
     icon: 'suppliers',
+    canAccess: canManageSuppliers,
   },
   {
     label: 'Produits',
     path: '/products',
     icon: 'products',
+    canAccess: canManageProducts,
   },
   {
     label: 'État du stock',
     path: '/stock-status',
     icon: 'stock',
+    canAccess: canViewStock,
   },
   {
     label: 'Vente',
     path: '/sales',
     icon: 'sales',
+    canAccess: canSell,
   },
   {
     label: 'Promotions',
     path: '/promotions',
     icon: 'promotions',
+    canAccess: canSell,
   },
   {
     label: 'Entrée en stock',
     path: '/inventories',
     icon: 'inventory',
+    canAccess: canManageInventory,
+  },
+  {
+    label: 'Mouvement de stock',
+    path: '/inventory-movements',
+    icon: 'inventory-movements',
+    canAccess: canManageInventory,
   },
   {
     label: 'Marge règlementaire',
     path: '/pricing-grid',
     icon: 'margin',
+    canAccess: canManageMargin,
   },
   {
     label: 'Référentiels produits',
     path: '/product-referentials',
     icon: 'referentials',
+    canAccess: canManageProducts,
   },
   {
     label: 'Comptes',
     path: '/accounts',
     icon: 'accounts',
+    canAccess: canManageAccounts,
   },
 ]
 
@@ -100,18 +117,8 @@ export function AppLayout({ user, onLogout }: AppLayoutProps) {
     setIsSidebarOpen(true)
   }
 
-  const visibleNavigationItems = navigationItems.filter(
-    (item) =>
-      (item.path !== '/suppliers' || canManageSuppliers(user)) &&
-      (item.path !== '/dashboard' || canViewDashboard(user)) &&
-      (item.path !== '/products' || canManageProducts(user)) &&
-      (item.path !== '/inventories' || canManageInventory(user)) &&
-      (item.path !== '/stock-status' || canViewStock(user)) &&
-      (item.path !== '/pricing-grid' || canManageMargin(user)) &&
-      (item.path !== '/product-referentials' || canManageProducts(user)) &&
-      (item.path !== '/accounts' || canManageAccounts(user)) &&
-      (!item.path.startsWith('/sales') || canSell(user)) &&
-      (item.path !== '/promotions' || canSell(user)),
+  const visibleNavigationItems = navigationItems.filter((item) =>
+    item.canAccess(user),
   )
 
   return (

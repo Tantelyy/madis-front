@@ -205,7 +205,7 @@ export function InventoryMovementsPage() {
             Stock
           </p>
           <h1 className="mt-2 text-3xl font-bold text-slate-950">
-            Historique des stocks
+           Mouvement de stock
           </h1>
         </div>
         <div className="flex flex-wrap gap-3">
