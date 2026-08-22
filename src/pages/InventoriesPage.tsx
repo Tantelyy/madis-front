@@ -296,7 +296,7 @@ export function InventoriesPage() {
             onClick={openGlobalHistory}
             className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-teal-700 shadow-sm transition hover:bg-teal-50"
           >
-            Historique global
+            Mouvement de stock
           </button>
           <TabularExportButton
             currentRows={inventories}

@@ -5,6 +5,7 @@ export type AppIconName =
   | 'chevron-right'
   | 'dashboard'
   | 'inventory'
+  | 'inventory-movements'
   | 'logout'
   | 'margin'
   | 'menu'
@@ -43,6 +44,13 @@ export function AppIcon({ name, className = 'h-5 w-5' }: AppIconProps) {
         <path d="M21 8v13H3V8" />
         <path d="M1 3h22v5H1zM12 3v11" />
         <path d="m8 11 4 4 4-4" />
+      </>
+    ),
+    'inventory-movements': (
+      <>
+        <path d="M3 9 12 4l9 5v11H3V9Z" />
+        <path d="m8 11-2 2 2 2M6 13h5" />
+        <path d="m16 17 2-2-2-2M18 15h-5" />
       </>
     ),
     logout: (
