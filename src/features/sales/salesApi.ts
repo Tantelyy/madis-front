@@ -5,6 +5,9 @@ import {
   appendDateRangeSearchParams,
   type DateRangeParams,
 } from '../../utils/dateRange'
+import type { PaymentMethod } from './paymentMethods'
+
+export type { PaymentMethod } from './paymentMethods'
 
 export type CartStatus =
   | 'PENDING'
@@ -12,18 +15,6 @@ export type CartStatus =
   | 'PAID'
   | 'REFUNDED'
   | 'CANCELLED'
-export type PaymentMethod = 'MVOLA' | 'AIRTEL_MONEY' | 'ORANGE_MONEY' | 'CASH'
-
-export const PAYMENT_METHOD_OPTIONS: readonly {
-  value: PaymentMethod
-  label: string
-}[] = [
-  { value: 'CASH', label: 'Espèces' },
-  { value: 'MVOLA', label: 'MVola' },
-  { value: 'AIRTEL_MONEY', label: 'Airtel Money' },
-  { value: 'ORANGE_MONEY', label: 'Orange Money' },
-]
-
 export interface SaleCatalogProduct {
   id: number
   name: string

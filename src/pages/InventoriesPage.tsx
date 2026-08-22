@@ -4,6 +4,7 @@ import { Alert } from '../components/Alert'
 import { CsvImportButton } from '../components/CsvImportButton'
 import { DateRangeFilter } from '../components/DateRangeFilter'
 import { Pagination } from '../components/Pagination'
+import type { SearchableSelectOption } from '../components/SearchableSelectField'
 import { TabularExportButton } from '../components/TabularExportButton'
 import { InventoryForm } from '../features/inventories/InventoryForm'
 import { InventoryModal } from '../features/inventories/InventoryModal'
@@ -34,6 +35,7 @@ import {
   formatRoundedPrice,
 } from '../features/inventories/inventoryFormatters'
 import { formatPdfAriary, type ExportColumn } from '../utils/tabularExport'
+import { createSupplier } from '../features/suppliers/suppliersApi'
 
 const PAGE_SIZE = 10
 
@@ -243,6 +245,24 @@ export function InventoriesPage() {
     }
   }
 
+  async function handleCreateSupplier(
+    name: string,
+  ): Promise<SearchableSelectOption> {
+    const supplier = await createSupplier({ name })
+    const supplierOption: InventorySupplierOption = {
+      id: supplier.id,
+      name: supplier.name,
+    }
+
+    setSuppliers((currentSuppliers) =>
+      [...currentSuppliers, supplierOption].sort((first, second) =>
+        first.name.localeCompare(second.name, 'fr', { sensitivity: 'base' }),
+      ),
+    )
+
+    return { id: supplier.id, label: supplier.name }
+  }
+
   async function handleImportCsv(file: File): Promise<void> {
     setIsImporting(true)
     setIsLoading(true)
@@ -401,6 +421,7 @@ export function InventoriesPage() {
             isSubmitting={isSubmitting}
             onCancel={() => setModalState(null)}
             onSubmit={handleSaveInventory}
+            onCreateSupplier={handleCreateSupplier}
           />
         </InventoryModal>
       ) : null}

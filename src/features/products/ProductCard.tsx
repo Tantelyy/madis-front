@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { ProductImage } from '../../components/ProductImage'
 import type { Product } from './productsApi'
 
 interface ProductCardProps {
@@ -48,19 +49,7 @@ export function ProductCard({
 
   return (
     <article className="flex h-full min-h-[20rem] flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="relative flex aspect-[4/3] items-center justify-center bg-slate-100">
-        {product.image ? (
-          <img
-            src={product.image}
-            alt={product.name}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <span className="text-4xl font-bold text-teal-700">
-            {product.name.slice(0, 1).toUpperCase()}
-          </span>
-        )}
-
+      <ProductImage image={product.image} name={product.name}>
         <div ref={menuRef} className="absolute right-3 top-3">
           <button
             type="button"
@@ -105,7 +94,7 @@ export function ProductCard({
             </div>
           ) : null}
         </div>
-      </div>
+      </ProductImage>
 
       <div className="flex flex-1 flex-col justify-end gap-2 p-4">
         <p className="text-xs font-bold uppercase tracking-wide text-teal-700">

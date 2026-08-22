@@ -1,5 +1,8 @@
 import { useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
-import { SearchableSelectField } from '../../components/SearchableSelectField'
+import {
+  SearchableSelectField,
+  type SearchableSelectOption,
+} from '../../components/SearchableSelectField'
 import { TextField } from '../../components/TextField'
 import type {
   Inventory,
@@ -25,12 +28,10 @@ interface InventoryFormProps {
   isSubmitting: boolean
   onCancel: () => void
   onSubmit: (payload: InventoryPayload) => Promise<void>
+  onCreateSupplier: (name: string) => Promise<SearchableSelectOption>
 }
 
-interface SelectOption {
-  id: number
-  label: string
-}
+type SelectOption = SearchableSelectOption
 
 function toDateInputValue(value: string | null | undefined): string {
   return value ? value.slice(0, 10) : ''
@@ -61,6 +62,7 @@ export function InventoryForm({
   isSubmitting,
   onCancel,
   onSubmit,
+  onCreateSupplier,
 }: InventoryFormProps) {
   const [values, setValues] = useState<InventoryFormValues>(() =>
     getInitialValues(inventory),
@@ -142,6 +144,7 @@ export function InventoryForm({
           disabled={isSubmitting}
           options={supplierOptions}
           placeholder="Rechercher un fournisseur"
+          createLabel="Ajouter le fournisseur"
           onValueChange={(value) => {
             setFormError('')
             setValues((currentValues) => ({
@@ -149,6 +152,7 @@ export function InventoryForm({
               supplierId: value,
             }))
           }}
+          onCreateOption={onCreateSupplier}
         />
       </div>
 

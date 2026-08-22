@@ -10,10 +10,12 @@ export interface SalesCartItem {
 export interface SalesCartContextValue {
   items: SalesCartItem[]
   itemCount: number
+  catalogRevision: number
   addItem: (item: SalesCartItem) => void
   updateItem: (productId: number, quantity: number, wholesale: boolean) => void
   removeItem: (productId: number) => void
   clearCart: () => void
+  notifyCatalogChanged: () => void
 }
 
 export const SalesCartContext = createContext<SalesCartContextValue | null>(null)

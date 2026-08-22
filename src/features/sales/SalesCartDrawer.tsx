@@ -1,4 +1,4 @@
-import { useMemo, useState, type ChangeEvent } from 'react'
+import { useMemo, useState } from 'react'
 import type { AuthenticatedUser } from '../../auth/authApi'
 import { Alert } from '../../components/Alert'
 import { formatPrice } from '../../utils/displayFormatters'
@@ -6,11 +6,15 @@ import {
   createSale,
   downloadSaleInvoice,
   paySale,
-  PAYMENT_METHOD_OPTIONS,
   type PaymentMethod,
 } from './salesApi'
 import { calculateCartPricing } from './cartPricing'
+import { PAYMENT_METHOD_OPTIONS } from './paymentMethods'
 import { useSalesCart } from './salesCart'
+import {
+  parseSaleQuantity,
+  usesAutomaticWholesalePrice,
+} from './salesRules'
 
 interface SalesCartDrawerProps {
   user: AuthenticatedUser
@@ -20,7 +24,13 @@ interface SalesCartDrawerProps {
 type CheckoutStep = 'CART' | 'CHOICE' | 'INVOICE'
 
 export function SalesCartDrawer({ user, onClose }: SalesCartDrawerProps) {
-  const { items, updateItem, removeItem, clearCart } = useSalesCart()
+  const {
+    items,
+    updateItem,
+    removeItem,
+    clearCart,
+    notifyCatalogChanged,
+  } = useSalesCart()
   const [step, setStep] = useState<CheckoutStep>('CART')
   const [customerName, setCustomerName] = useState<string>('')
   const [customerContact, setCustomerContact] = useState<string>('')
@@ -60,6 +70,7 @@ export function SalesCartDrawer({ user, onClose }: SalesCartDrawerProps) {
 
     try {
       const sale = await createSale({ items: saleItems() })
+      notifyCatalogChanged()
       resetCheckout()
       setSuccessMessage(
         `Vente n°${sale.id} envoyée pour validation administrative.`,
@@ -92,6 +103,7 @@ export function SalesCartDrawer({ user, onClose }: SalesCartDrawerProps) {
         items: saleItems(),
       })
       createdSaleId = sale.id
+      notifyCatalogChanged()
 
       if (sale.status !== 'VALIDATED') {
         throw new Error(
@@ -144,9 +156,8 @@ export function SalesCartDrawer({ user, onClose }: SalesCartDrawerProps) {
   function handleQuantityChange(
     productId: number,
     wholesale: boolean,
-    event: ChangeEvent<HTMLInputElement>,
+    quantity: number,
   ): void {
-    const quantity = Math.max(1, Number(event.target.value))
     updateItem(productId, quantity, wholesale)
   }
 
@@ -207,26 +218,29 @@ export function SalesCartDrawer({ user, onClose }: SalesCartDrawerProps) {
                 <div className="mt-4 grid grid-cols-2 gap-3">
                   <label className="text-sm font-medium text-slate-700">
                     Quantité
-                    <input
-                      type="number"
-                      min="1"
-                      value={item.quantity}
+                    <CartQuantityInput
+                      quantity={item.quantity}
                       disabled={step !== 'CART'}
-                      onChange={(event) =>
+                      onChange={(quantity) =>
                         handleQuantityChange(
                           item.product.id,
                           item.wholesale,
-                          event,
+                          quantity,
                         )
                       }
-                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 disabled:bg-slate-100"
                     />
                   </label>
                   <label className="flex items-center gap-2 self-end rounded-lg bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">
                     <input
                       type="checkbox"
-                      checked={item.wholesale}
-                      disabled={step !== 'CART'}
+                      checked={
+                        item.wholesale &&
+                        !usesAutomaticWholesalePrice(item.quantity)
+                      }
+                      disabled={
+                        step !== 'CART' ||
+                        usesAutomaticWholesalePrice(item.quantity)
+                      }
                       onChange={(event) =>
                         updateItem(
                           item.product.id,
@@ -435,6 +449,39 @@ export function SalesCartDrawer({ user, onClose }: SalesCartDrawerProps) {
         </div>
       </div>
     </div>
+  )
+}
+
+function CartQuantityInput({
+  quantity,
+  disabled,
+  onChange,
+}: {
+  quantity: number
+  disabled: boolean
+  onChange: (quantity: number) => void
+}) {
+  const [draftValue, setDraftValue] = useState<string | null>(null)
+
+  return (
+    <input
+      type="number"
+      min="1"
+      step="1"
+      value={draftValue ?? String(quantity)}
+      disabled={disabled}
+      onBlur={() => setDraftValue(null)}
+      onChange={(event) => {
+        const nextValue = event.target.value
+        setDraftValue(nextValue)
+
+        const nextQuantity = parseSaleQuantity(nextValue)
+        if (nextQuantity !== null) {
+          onChange(nextQuantity)
+        }
+      }}
+      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 disabled:bg-slate-100"
+    />
   )
 }
 

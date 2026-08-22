@@ -8,10 +8,10 @@ import { SaleDetails } from '../features/sales/SaleDetails'
 import { SaleListTable } from '../features/sales/SaleListTable'
 import {
   paySale,
-  PAYMENT_METHOD_OPTIONS,
   type PaymentMethod,
   type Sale,
 } from '../features/sales/salesApi'
+import { PAYMENT_METHOD_OPTIONS } from '../features/sales/paymentMethods'
 import { useSalesList } from '../features/sales/useSalesList'
 
 const PAGE_SIZE = 10

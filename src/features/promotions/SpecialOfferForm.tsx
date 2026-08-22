@@ -157,6 +157,15 @@ export function SpecialOfferForm({
                       {product.reference}
                     </span>
                   </span>
+                  <span
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                      product.totalStock > 0
+                        ? 'bg-teal-50 text-teal-800'
+                        : 'bg-slate-100 text-slate-500'
+                    }`}
+                  >
+                    Stock restant : {product.totalStock}
+                  </span>
                 </label>
               ))
             )}

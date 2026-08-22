@@ -5,6 +5,7 @@ import { Alert } from '../components/Alert'
 import { CsvImportButton } from '../components/CsvImportButton'
 import { Pagination } from '../components/Pagination'
 import { SaleProductCard } from '../features/sales/SaleProductCard'
+import { useSalesCart } from '../features/sales/salesCart'
 import {
   listSaleCatalog,
   importSalesCsv,
@@ -16,6 +17,7 @@ import { createPaginationMeta } from '../utils/paginationMeta'
 const PAGE_SIZE = 12
 export function SalesPage({ user }: { user: AuthenticatedUser }) {
   const navigate = useNavigate()
+  const { catalogRevision } = useSalesCart()
   const [products, setProducts] = useState<SaleCatalogProduct[]>([])
   const [meta, setMeta] = useState<PaginatedSaleCatalog['meta']>(() =>
     createPaginationMeta(PAGE_SIZE),
@@ -67,7 +69,7 @@ export function SalesPage({ user }: { user: AuthenticatedUser }) {
     return () => {
       isActive = false
     }
-  }, [fetchCatalog])
+  }, [catalogRevision, fetchCatalog])
 
   function handleSearchChange(event: ChangeEvent<HTMLInputElement>): void {
     setIsLoading(true)
