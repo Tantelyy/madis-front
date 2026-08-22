@@ -1,4 +1,5 @@
 import type { CartStatus, PaymentMethod } from './salesApi'
+import { getPaymentMethodLabel } from './paymentMethods'
 
 const SALE_STATUS_LABELS: Readonly<Record<CartStatus, string>> = {
   PENDING: 'En attente',
@@ -6,13 +7,6 @@ const SALE_STATUS_LABELS: Readonly<Record<CartStatus, string>> = {
   PAID: 'Payée',
   REFUNDED: 'Remboursée',
   CANCELLED: 'Annulée',
-}
-
-const PAYMENT_METHOD_LABELS: Readonly<Record<PaymentMethod, string>> = {
-  CASH: 'Espèces',
-  MVOLA: 'MVola',
-  AIRTEL_MONEY: 'Airtel Money',
-  ORANGE_MONEY: 'Orange Money',
 }
 
 export function formatSaleStatus(status: CartStatus): string {
@@ -30,7 +24,7 @@ export function canGenerateSaleInvoice(status: CartStatus): boolean {
 export function formatPaymentMethod(
   paymentMethod: PaymentMethod | null,
 ): string {
-  return paymentMethod ? PAYMENT_METHOD_LABELS[paymentMethod] : '-'
+  return paymentMethod ? getPaymentMethodLabel(paymentMethod) : '-'
 }
 
 export function saleStatusClassName(status: CartStatus): string {

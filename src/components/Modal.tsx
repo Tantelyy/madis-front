@@ -1,4 +1,5 @@
 import { useId, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { Alert } from './Alert'
 
 export type ModalSize = 'sm' | 'md' | 'lg' | 'xl'
@@ -29,7 +30,7 @@ export function Modal({
 }: ModalProps) {
   const titleId = useId()
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-6"
       role="dialog"
@@ -59,6 +60,7 @@ export function Modal({
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

@@ -1,4 +1,5 @@
 import type { SalesCartItem } from './salesCart'
+import { usesAutomaticWholesalePrice } from './salesRules'
 
 export interface CartItemPricing {
   isWholesale: boolean
@@ -43,7 +44,8 @@ export function calculateCartPricing(
 export function calculateCartItemPricing(
   item: SalesCartItem,
 ): CartItemPricing {
-  const isWholesale = item.wholesale || item.quantity > 3
+  const isWholesale =
+    item.wholesale || usesAutomaticWholesalePrice(item.quantity)
   const promotionalUnitPrice = parsePrice(
     isWholesale
       ? item.product.wholesalePrice
