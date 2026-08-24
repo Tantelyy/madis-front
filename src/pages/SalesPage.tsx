@@ -164,7 +164,7 @@ export function SalesPage({ user }: { user: AuthenticatedUser }) {
           value={search}
           onChange={handleSearchChange}
           placeholder="Nom ou référence du produit"
-          className="w-full rounded-lg border border-slate-200 px-4 py-3 outline-none focus:border-teal-600 focus:ring-4 focus:ring-teal-100 sm:max-w-2xl"
+          className="w-full rounded-lg border border-slate-200 px-4 py-3 outline-none focus:border-teal-600 focus:ring-4 focus:ring-teal-100 sm:w-72"
         />
       </div>
 

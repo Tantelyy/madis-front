@@ -4,6 +4,7 @@ import {
   type ChangeEvent,
   type KeyboardEvent,
 } from 'react'
+import { AppIcon } from './AppIcon'
 
 export interface SearchableSelectOption {
   id: number
@@ -157,7 +158,11 @@ export function SearchableSelectField({
         onBlur={handleBlur}
         onChange={handleQueryChange}
         onKeyDown={handleKeyDown}
-        className="block w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-100 disabled:bg-slate-100"
+        className="block w-full rounded-lg border border-slate-200 bg-white px-4 py-3 pr-10 text-slate-900 shadow-sm outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-100 disabled:bg-slate-100"
+      />
+      <AppIcon
+        name="chevron-down"
+        className={`pointer-events-none absolute right-3 top-11 h-4 w-4 text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
       />
       {errorMessage ? (
         <p className="text-xs font-semibold text-red-700">{errorMessage}</p>

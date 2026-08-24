@@ -19,6 +19,7 @@ export interface ListStockSummaryParams {
   page: number
   limit: number
   search?: string
+  expiresBefore?: string
   sortBy?: 'name' | 'reference' | 'remainingQuantity'
   order?: 'asc' | 'desc'
 }
@@ -31,6 +32,13 @@ export interface PaginatedStockSummary {
     limit: number
     totalPages: number
   }
+}
+
+export interface StockLimit {
+  id: number
+  createdAt: string
+  createdBy: number
+  value: number
 }
 
 export function listStockSummary(
@@ -47,6 +55,10 @@ export function listStockSummary(
     searchParams.set('search', params.search.trim())
   }
 
+  if (params.expiresBefore) {
+    searchParams.set('expiresBefore', params.expiresBefore)
+  }
+
   return requestJson<PaginatedStockSummary>(
     `/inventories/stock-summary?${searchParams}`,
   )
@@ -58,4 +70,15 @@ export function listAllStockSummary(
   return listAllPages((page) =>
     listStockSummary({ ...params, page, limit: 100 }),
   )
+}
+
+export function getStockLimit(): Promise<StockLimit> {
+  return requestJson<StockLimit>('/inventories/stock-limit')
+}
+
+export function createStockLimit(value: number): Promise<StockLimit> {
+  return requestJson<StockLimit>('/inventories/stock-limit', {
+    method: 'POST',
+    body: JSON.stringify({ value }),
+  })
 }

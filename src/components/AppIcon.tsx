@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 export type AppIconName =
   | 'accounts'
   | 'chevron-right'
+  | 'chevron-down'
   | 'dashboard'
   | 'inventory'
   | 'inventory-movements'
@@ -31,6 +32,7 @@ export function AppIcon({ name, className = 'h-5 w-5' }: AppIconProps) {
       </>
     ),
     'chevron-right': <path d="m9 18 6-6-6-6" />,
+    'chevron-down': <path d="m6 9 6 6 6-6" />,
     dashboard: (
       <>
         <rect width="7" height="9" x="3" y="3" rx="1" />

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type ChangeEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Alert } from '../components/Alert'
+import { AppIcon } from '../components/AppIcon'
 import { DateRangeFilter } from '../components/DateRangeFilter'
 import { Pagination } from '../components/Pagination'
 import { TabularExportButton } from '../components/TabularExportButton'
@@ -237,7 +238,7 @@ export function InventoryMovementsPage() {
       {errorMessage ? <Alert type="error" message={errorMessage} /> : null}
 
       <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_16rem]">
+        <div className="flex flex-wrap gap-4">
           <div>
             <label
               htmlFor="inventory-movement-search"
@@ -251,7 +252,7 @@ export function InventoryMovementsPage() {
               value={search}
               onChange={handleSearchChange}
               placeholder="Produit, référence, fournisseur ou utilisateur"
-              className="mt-2 block w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-600 focus:ring-4 focus:ring-teal-100"
+              className="mt-2 block w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-600 focus:ring-4 focus:ring-teal-100 lg:w-[30rem]"
             />
           </div>
           <div>
@@ -261,11 +262,12 @@ export function InventoryMovementsPage() {
             >
               Type de mouvement
             </label>
+            <span className="relative mt-2 block">
             <select
               id="inventory-movement-type"
               value={type}
               onChange={handleTypeChange}
-              className="mt-2 block w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-100"
+              className="block w-full appearance-none rounded-lg border border-slate-200 bg-white px-4 py-3 pr-10 text-slate-900 shadow-sm outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-100 sm:w-52"
             >
               <option value="">Tous les types</option>
               {INVENTORY_MOVEMENT_TYPE_OPTIONS.map((movementType) => (
@@ -274,6 +276,11 @@ export function InventoryMovementsPage() {
                 </option>
               ))}
             </select>
+            <AppIcon
+              name="chevron-down"
+              className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
+            />
+            </span>
           </div>
         </div>
         <DateRangeFilter

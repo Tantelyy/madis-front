@@ -13,6 +13,7 @@ export type CartStatus =
   | 'PENDING'
   | 'VALIDATED'
   | 'PAID'
+  | 'PARTIALLY_REFUNDED'
   | 'REFUNDED'
   | 'CANCELLED'
 export interface SaleCatalogProduct {
@@ -38,6 +39,8 @@ export interface SaleCatalogPromotion {
   unit: 'PERCENT' | 'FIXED' | null
   buyQuantity: number | null
   freeQuantity: number | null
+  productIdOffer: number | null
+  productOfferName: string | null
 }
 
 export interface SaleDetail {
@@ -50,6 +53,15 @@ export interface SaleDetail {
   discountAmount: string | null
   wholesale: boolean
   specialOfferId: number | null
+  refundAt: string | null
+  refundBy: number | null
+  refundedQuantity: number
+  reason: string | null
+  refundUser?: {
+    id: number
+    userName: string
+    email: string
+  } | null
   product: {
     id: number
     name: string
@@ -84,6 +96,12 @@ export interface Sale {
     userName: string
     email: string
   } | null
+}
+
+export interface RefundSaleItemPayload {
+  cartDetailId: number
+  quantity: number
+  reason: string
 }
 
 export interface PaginatedSaleCatalog {
@@ -229,8 +247,14 @@ function reverseSale(
   })
 }
 
-export function refundSale(id: number, reason: string): Promise<Sale> {
-  return reverseSale(id, 'refund', reason)
+export function refundSale(
+  id: number,
+  items: readonly RefundSaleItemPayload[],
+): Promise<Sale> {
+  return requestJson<Sale>(`/sales/${id}/refund`, {
+    method: 'POST',
+    body: JSON.stringify({ items }),
+  })
 }
 
 export function cancelSale(id: number, reason: string): Promise<Sale> {

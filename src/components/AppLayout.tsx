@@ -49,7 +49,7 @@ const navigationItems: readonly NavigationItem[] = [
     canAccess: canManageProducts,
   },
   {
-    label: 'État du stock',
+    label: 'État de stock',
     path: '/stock-status',
     icon: 'stock',
     canAccess: canViewStock,

@@ -1,9 +1,15 @@
 import {
+  useMemo,
   useState,
   type ChangeEvent,
   type FormEvent,
   type ReactNode,
 } from 'react'
+import { AppIcon } from '../../components/AppIcon'
+import {
+  SearchableSelectField,
+  type SearchableSelectOption,
+} from '../../components/SearchableSelectField'
 import type { SaleCatalogProduct } from '../sales/salesApi'
 import type {
   SpecialOffer,
@@ -21,6 +27,8 @@ interface SpecialOfferFormProps {
 }
 
 interface FormValues {
+  productId: string
+  productIdOffer: string
   label: string
   startDateTime: string
   endDateTime: string
@@ -38,6 +46,8 @@ function toDateTimeInput(value: string | undefined): string {
 
 function initialValues(offer?: SpecialOffer): FormValues {
   return {
+    productId: offer?.productIds[0] ? String(offer.productIds[0]) : '',
+    productIdOffer: offer?.productIdOffer ? String(offer.productIdOffer) : '',
     label: offer?.label ?? '',
     startDateTime: toDateTimeInput(offer?.startDateTime),
     endDateTime: toDateTimeInput(offer?.endDateTime),
@@ -50,6 +60,13 @@ function initialValues(offer?: SpecialOffer): FormValues {
   }
 }
 
+function buildProductOption(product: SaleCatalogProduct): SearchableSelectOption {
+  return {
+    id: product.id,
+    label: `${product.name} — ${product.reference} (stock : ${product.totalStock})`,
+  }
+}
+
 export function SpecialOfferForm({
   offer,
   products,
@@ -58,17 +75,13 @@ export function SpecialOfferForm({
   onSubmit,
 }: SpecialOfferFormProps) {
   const [values, setValues] = useState<FormValues>(() => initialValues(offer))
-  const [selectedProductIds, setSelectedProductIds] = useState<number[]>(
-    () => offer?.productIds ?? [],
+  const [selectionError, setSelectionError] = useState<string>('')
+  const productOptions = useMemo(
+    () => products.map(buildProductOption),
+    [products],
   )
-  const [productSearch, setProductSearch] = useState<string>('')
-
-  const normalizedProductSearch = productSearch.trim().toLocaleLowerCase()
-  const filteredProducts = products.filter(
-    (product) =>
-      normalizedProductSearch.length === 0 ||
-      product.name.toLocaleLowerCase().includes(normalizedProductSearch) ||
-      product.reference.toLocaleLowerCase().includes(normalizedProductSearch),
+  const selectedOfferedProduct = products.find(
+    (product) => String(product.id) === values.productIdOffer,
   )
 
   function handleChange(
@@ -79,17 +92,28 @@ export function SpecialOfferForm({
       ...currentValues,
       [name]: event.target.value,
     }))
+    setSelectionError('')
+  }
+
+  function setProductValue(
+    field: 'productId' | 'productIdOffer',
+    value: string,
+  ): void {
+    setValues((currentValues) => ({ ...currentValues, [field]: value }))
+    setSelectionError('')
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
+    const productId = Number(values.productId)
 
-    if (selectedProductIds.length === 0) {
+    if (!Number.isInteger(productId) || productId <= 0) {
+      setSelectionError('Sélectionnez le produit concerné par la promotion.')
       return
     }
 
     const payload: SpecialOfferPayload = {
-      productIds: selectedProductIds,
+      productIds: [productId],
       label: values.label,
       startDateTime: new Date(values.startDateTime).toISOString(),
       endDateTime: new Date(values.endDateTime).toISOString(),
@@ -103,83 +127,45 @@ export function SpecialOfferForm({
       payload.value = Number(values.value)
       payload.unit = values.unit
     } else {
+      const productIdOffer = Number(values.productIdOffer)
+      const freeQuantity = Number(values.freeQuantity)
+
+      if (!Number.isInteger(productIdOffer) || productIdOffer <= 0) {
+        setSelectionError('Sélectionnez le produit à donner gratuitement.')
+        return
+      }
+
+      if (
+        !Number.isInteger(freeQuantity) ||
+        freeQuantity <= 0 ||
+        !selectedOfferedProduct ||
+        selectedOfferedProduct.totalStock < freeQuantity
+      ) {
+        setSelectionError(
+          'Le produit offert doit avoir la quantité gratuite demandée en stock.',
+        )
+        return
+      }
+
       payload.buyQuantity = Number(values.buyQuantity)
-      payload.freeQuantity = Number(values.freeQuantity)
+      payload.freeQuantity = freeQuantity
+      payload.productIdOffer = productIdOffer
     }
 
     await onSubmit(payload)
   }
 
-  function toggleProduct(productId: number): void {
-    setSelectedProductIds((currentProductIds) =>
-      currentProductIds.includes(productId)
-        ? currentProductIds.filter((id) => id !== productId)
-        : [...currentProductIds, productId],
-    )
-  }
-
   return (
     <form className="space-y-5" onSubmit={handleSubmit}>
-      <Field label="Produits concernés">
-        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white focus-within:border-teal-600 focus-within:ring-4 focus-within:ring-teal-100">
-          <div className="border-b border-slate-200 p-3">
-            <input
-              type="search"
-              value={productSearch}
-              onChange={(event) => setProductSearch(event.target.value)}
-              placeholder="Rechercher un produit par nom ou référence"
-              aria-label="Rechercher un produit à mettre en promotion"
-              className="w-full border-0 px-1 py-1 outline-none"
-            />
-          </div>
-          <div className="max-h-52 overflow-y-auto p-2">
-            {filteredProducts.length === 0 ? (
-              <p className="px-3 py-5 text-center text-sm text-slate-500">
-                Aucun produit trouvé.
-              </p>
-            ) : (
-              filteredProducts.map((product) => (
-                <label
-                  key={product.id}
-                  className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-teal-50"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedProductIds.includes(product.id)}
-                    onChange={() => toggleProduct(product.id)}
-                    className="h-4 w-4 accent-teal-700"
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-semibold text-slate-800">
-                      {product.name}
-                    </span>
-                    <span className="block text-xs text-slate-500">
-                      {product.reference}
-                    </span>
-                  </span>
-                  <span
-                    className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                      product.totalStock > 0
-                        ? 'bg-teal-50 text-teal-800'
-                        : 'bg-slate-100 text-slate-500'
-                    }`}
-                  >
-                    Stock restant : {product.totalStock}
-                  </span>
-                </label>
-              ))
-            )}
-          </div>
-          <div className="border-t border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-600">
-            {selectedProductIds.length} produit(s) sélectionné(s)
-          </div>
-        </div>
-        {selectedProductIds.length === 0 ? (
-          <p className="mt-2 text-xs font-medium text-red-600">
-            Sélectionnez au moins un produit.
-          </p>
-        ) : null}
-      </Field>
+      <SearchableSelectField
+        id="special-offer-product"
+        label="Produit concerné"
+        value={values.productId}
+        options={productOptions}
+        placeholder="Rechercher un produit par nom ou référence"
+        required
+        onValueChange={(value) => setProductValue('productId', value)}
+      />
 
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Nom de la promotion">
@@ -191,19 +177,19 @@ export function SpecialOfferForm({
             className="w-full rounded-lg border border-slate-200 px-4 py-3"
           />
         </Field>
-        <Field label="Type de promotion">
+        <SelectField label="Type de promotion">
           <select
             name="type"
             value={values.type}
             onChange={handleChange}
-            className="w-full rounded-lg border border-slate-200 px-4 py-3"
+            className="w-full appearance-none rounded-lg border border-slate-200 px-4 py-3 pr-10"
           >
             <option value="REDUCTION">Réduction</option>
             <option value="BUY_X_GET_N">
               Acheter X, recevoir N gratuitement
             </option>
           </select>
-        </Field>
+        </SelectField>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -252,44 +238,64 @@ export function SpecialOfferForm({
               className="w-full rounded-lg border border-slate-200 px-4 py-3"
             />
           </Field>
-          <Field label="Unité">
+          <SelectField label="Unité">
             <select
               name="unit"
               value={values.unit}
               onChange={handleChange}
-              className="w-full rounded-lg border border-slate-200 px-4 py-3"
+              className="w-full appearance-none rounded-lg border border-slate-200 px-4 py-3 pr-10"
             >
               <option value="PERCENT">Pourcentage</option>
               <option value="FIXED">Montant fixe (Ar)</option>
             </select>
-          </Field>
+          </SelectField>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Quantité achetée">
-            <input
-              type="number"
-              min="1"
-              name="buyQuantity"
-              value={values.buyQuantity}
-              onChange={handleChange}
-              required
-              className="w-full rounded-lg border border-slate-200 px-4 py-3"
-            />
-          </Field>
-          <Field label="Quantité offerte">
-            <input
-              type="number"
-              min="1"
-              name="freeQuantity"
-              value={values.freeQuantity}
-              onChange={handleChange}
-              required
-              className="w-full rounded-lg border border-slate-200 px-4 py-3"
-            />
-          </Field>
-        </div>
+        <>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="Quantité achetée">
+              <input
+                type="number"
+                min="1"
+                name="buyQuantity"
+                value={values.buyQuantity}
+                onChange={handleChange}
+                required
+                className="w-full rounded-lg border border-slate-200 px-4 py-3"
+              />
+            </Field>
+            <Field label="Quantité offerte">
+              <input
+                type="number"
+                min="1"
+                name="freeQuantity"
+                value={values.freeQuantity}
+                onChange={handleChange}
+                required
+                className="w-full rounded-lg border border-slate-200 px-4 py-3"
+              />
+            </Field>
+          </div>
+          <SearchableSelectField
+            id="special-offer-gift-product"
+            label="Produit à donner gratuitement"
+            value={values.productIdOffer}
+            options={productOptions}
+            placeholder="Rechercher le produit offert"
+            required
+            onValueChange={(value) => setProductValue('productIdOffer', value)}
+          />
+          {selectedOfferedProduct ? (
+            <p className="text-xs font-medium text-slate-500">
+              Stock disponible : {selectedOfferedProduct.totalStock}
+            </p>
+          ) : null}
+        </>
       )}
+
+      {selectionError ? (
+        <p className="text-sm font-medium text-red-600">{selectionError}</p>
+      ) : null}
 
       <div className="flex justify-end gap-3">
         <button
@@ -301,7 +307,7 @@ export function SpecialOfferForm({
         </button>
         <button
           type="submit"
-          disabled={isSubmitting || selectedProductIds.length === 0}
+          disabled={isSubmitting || !values.productId}
           className="rounded-lg bg-teal-700 px-4 py-3 font-semibold text-white disabled:bg-teal-300"
         >
           {isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
@@ -322,6 +328,27 @@ function Field({
     <label className="block space-y-2 text-sm font-medium text-slate-700">
       <span>{label}</span>
       {children}
+    </label>
+  )
+}
+
+function SelectField({
+  label,
+  children,
+}: {
+  label: string
+  children: ReactNode
+}) {
+  return (
+    <label className="block space-y-2 text-sm font-medium text-slate-700">
+      <span>{label}</span>
+      <span className="relative block">
+        {children}
+        <AppIcon
+          name="chevron-down"
+          className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
+        />
+      </span>
     </label>
   )
 }

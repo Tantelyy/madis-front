@@ -43,6 +43,7 @@ export interface Inventory {
 export interface InventoryMovement {
   id: number
   inventoryId: number
+  cartId: number | null
   incomingQuantity: number
   outgoingQuantity: number
   actorId: number

@@ -196,6 +196,17 @@ export function PromotionsPage() {
     return names.join(', ')
   }
 
+  function offeredProductName(offer: SpecialOffer): string | null {
+    if (!offer.productIdOffer) {
+      return null
+    }
+
+    return (
+      products.find((product) => product.id === offer.productIdOffer)?.name ??
+      `Produit n°${offer.productIdOffer}`
+    )
+  }
+
   function handleSearch(event: ChangeEvent<HTMLInputElement>): void {
     setSearch(event.target.value)
     setPage(1)
@@ -265,19 +276,19 @@ export function PromotionsPage() {
         <Alert type="success" message={successMessage} />
       ) : null}
 
-      <div className="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-2">
-        <label className="text-sm font-medium text-slate-700">
+      <div className="flex flex-wrap gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <label className="block text-sm font-medium text-slate-700">
           Nom de la promotion
           <input
             type="search"
             value={search}
             onChange={handleSearch}
-            className="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3"
+            className="mt-2 block w-full rounded-lg border border-slate-200 px-4 py-3 sm:w-72"
             placeholder="Rechercher par nom"
           />
         </label>
-        <label className="text-sm font-medium text-slate-700">
-          Valide à la date
+        <label className="block text-sm font-medium text-slate-700">
+          Valide jusqu'au
           <input
             type="date"
             value={validAt}
@@ -285,7 +296,7 @@ export function PromotionsPage() {
               setValidAt(event.target.value)
               setPage(1)
             }}
-            className="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3"
+            className="mt-2 block w-full rounded-lg border border-slate-200 px-4 py-3 sm:w-44"
           />
         </label>
       </div>
@@ -332,7 +343,12 @@ export function PromotionsPage() {
                 >
                   <td className="px-4 py-4 font-bold">{offer.label}</td>
                   <td className="max-w-xs px-4 py-4">
-                    {productNames(offer.productIds)}
+                    <p>{productNames(offer.productIds)}</p>
+                    {offeredProductName(offer) ? (
+                      <p className="mt-1 text-xs text-teal-700">
+                        Offert : {offeredProductName(offer)}
+                      </p>
+                    ) : null}
                   </td>
                   <td className="px-4 py-4">{formatPromotionRule(offer)}</td>
                   <td className="px-4 py-4">

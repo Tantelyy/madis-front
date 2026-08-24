@@ -2,6 +2,7 @@ import { useState, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { AuthenticatedUser } from '../auth/authApi'
 import { Alert } from '../components/Alert'
+import { AppIcon } from '../components/AppIcon'
 import { DateRangeFilter } from '../components/DateRangeFilter'
 import { Pagination } from '../components/Pagination'
 import { TabularExportButton } from '../components/TabularExportButton'
@@ -160,15 +161,16 @@ export function SalesHistoryPage({ user }: { user: AuthenticatedUser }) {
       ) : null}
 
       <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="grid gap-4 md:grid-cols-[1fr_16rem]">
+        <div className="flex flex-wrap gap-4">
           <input
           type="search"
           value={search}
           onChange={handleSearch}
           aria-label="Rechercher une vente"
           placeholder="Client, contact ou vendeur"
-          className="w-full rounded-lg border border-slate-200 px-4 py-3 outline-none focus:border-teal-600 focus:ring-4 focus:ring-teal-100"
+          className="w-full rounded-lg border border-slate-200 px-4 py-3 outline-none focus:border-teal-600 focus:ring-4 focus:ring-teal-100 md:w-72"
         />
+          <span className="relative block">
           <select
           value={status ?? ''}
           onChange={(event) => {
@@ -179,7 +181,7 @@ export function SalesHistoryPage({ user }: { user: AuthenticatedUser }) {
             setPage(1)
           }}
           aria-label="Filtrer par statut"
-          className="rounded-lg border border-slate-200 px-4 py-3"
+          className="w-full appearance-none rounded-lg border border-slate-200 px-4 py-3 pr-10 md:w-48"
         >
           <option value="">Tous les statuts</option>
           <option value="PENDING">En attente</option>
@@ -187,7 +189,13 @@ export function SalesHistoryPage({ user }: { user: AuthenticatedUser }) {
           <option value="PAID">Payée</option>
           <option value="REFUNDED">Remboursée</option>
           <option value="CANCELLED">Annulée</option>
+          <option value="PARTIALLY_REFUNDED">Partiellement remboursée</option>
           </select>
+          <AppIcon
+            name="chevron-down"
+            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
+          />
+          </span>
         </div>
         <DateRangeFilter
           idPrefix="sales"
@@ -208,7 +216,10 @@ export function SalesHistoryPage({ user }: { user: AuthenticatedUser }) {
         isLoading={isLoading}
         onSelect={setSelectedSale}
         renderActions={(sale) => {
-          if (sale.status === 'PAID') {
+          if (
+            sale.status === 'PAID' ||
+            sale.status === 'PARTIALLY_REFUNDED'
+          ) {
             return (
               <button
                 type="button"
@@ -270,7 +281,9 @@ export function SalesHistoryPage({ user }: { user: AuthenticatedUser }) {
           onClose={() => setReversalState(null)}
           onCompleted={async (sale) => {
             setSuccessMessage(
-              sale.status === 'REFUNDED'
+              sale.status === 'PARTIALLY_REFUNDED'
+                ? `Vente n°${sale.id} partiellement remboursée avec succès.`
+                : sale.status === 'REFUNDED'
                 ? `Vente n°${sale.id} remboursée avec succès.`
                 : `Vente n°${sale.id} annulée avec succès.`,
             )

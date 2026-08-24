@@ -43,8 +43,18 @@ export function InventoryMovementsTable({
                   <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
                     {formatDateTime(movement.createdAt)}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-950">
-                    {formatMovementType(movement.type)}
+                  <td className="px-4 py-4 text-sm font-semibold text-slate-950">
+                    <p>{formatMovementType(movement.type)}</p>
+                    {movement.cartId !== null ? (
+                      <p className="mt-1 text-xs font-normal text-slate-500">
+                        Vente n°{movement.cartId}
+                      </p>
+                    ) : null}
+                    {movement.type === 'REFUND' ? (
+                      <p className="mt-1 text-xs font-normal text-slate-500">
+                        Sans retour en stock
+                      </p>
+                    ) : null}
                   </td>
                   <td className="px-4 py-4 text-sm text-slate-600">
                     {movement.inventory?.product?.name ??
