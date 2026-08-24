@@ -1,4 +1,5 @@
 import { Fragment, useState } from 'react'
+import { AppIcon } from '../../components/AppIcon'
 import { formatDate } from '../../utils/displayFormatters'
 import type { ListStockSummaryParams, StockSummary } from './stockApi'
 
@@ -10,6 +11,7 @@ interface StockSummaryTableProps {
   sortBy: StockSortField
   sortOrder: 'asc' | 'desc'
   onSort: (field: StockSortField) => void
+  dangerThreshold: number
 }
 
 export function StockSummaryTable({
@@ -18,6 +20,7 @@ export function StockSummaryTable({
   sortBy,
   sortOrder,
   onSort,
+  dangerThreshold,
 }: StockSummaryTableProps) {
   const [expandedProductIds, setExpandedProductIds] = useState<Set<number>>(
     () => new Set(),
@@ -73,6 +76,7 @@ export function StockSummaryTable({
             ) : (
               products.map((product) => {
                 const isExpanded = expandedProductIds.has(product.productId)
+                const isLowStock = product.remainingQuantity <= dangerThreshold
 
                 return (
                   <Fragment key={product.productId}>
@@ -86,11 +90,15 @@ export function StockSummaryTable({
                           aria-label={`${isExpanded ? 'Masquer' : 'Afficher'} les lots de ${product.name}`}
                         >
                           <span
-                            className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                            className="hidden"
                             aria-hidden="true"
                           >
                             ⌄
                           </span>
+                          <AppIcon
+                            name="chevron-down"
+                            className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                          />
                         </button>
                       </td>
                       <td className="px-4 py-4 text-sm font-semibold text-slate-950">
@@ -100,7 +108,31 @@ export function StockSummaryTable({
                         {product.reference}
                       </td>
                       <td className="px-4 py-4 text-sm font-bold text-teal-700">
-                        {product.remainingQuantity}
+                        <span className="inline-flex items-center gap-2">
+                          {product.remainingQuantity}
+                          {isLowStock ? (
+                            <span
+                              title={`Stock proche du seuil : ${dangerThreshold}`}
+                              className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-amber-700"
+                              aria-label={`Attention : stock proche du seuil de ${dangerThreshold}`}
+                            >
+                              <svg
+                                viewBox="0 0 24 24"
+                                className="h-4 w-4"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden="true"
+                              >
+                                <path d="M12 3 2.8 20h18.4L12 3Z" />
+                                <path d="M12 9v4" />
+                                <path d="M12 17h.01" />
+                              </svg>
+                            </span>
+                          ) : null}
+                        </span>
                       </td>
                     </tr>
                     {isExpanded ? (

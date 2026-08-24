@@ -5,6 +5,10 @@ export function formatPromotionBadge(
   promotion: SaleCatalogPromotion,
 ): string {
   if (promotion.type === 'BUY_X_GET_N') {
+    if (promotion.productOfferName) {
+      return `Promotion · Achetez ${promotion.buyQuantity ?? 0}, obtenez ${promotion.freeQuantity ?? 0} ${promotion.productOfferName}`
+    }
+
     return `Promotion · Achetez ${promotion.buyQuantity ?? 0}, obtenez ${promotion.freeQuantity ?? 0}`
   }
 

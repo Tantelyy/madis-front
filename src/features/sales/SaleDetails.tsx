@@ -5,7 +5,15 @@ import {
   formatSaleStatus,
   saleStatusClassName,
 } from './saleDisplay'
-import type { Sale } from './salesApi'
+import type { Sale, SaleDetail } from './salesApi'
+
+function isStandaloneFreeProduct(detail: SaleDetail): boolean {
+  return detail.quantity === 0 && (detail.freeQuantity ?? 0) > 0
+}
+
+function refundedPaidQuantity(detail: SaleDetail): number {
+  return Math.min(detail.refundedQuantity, detail.quantity)
+}
 
 export function SaleDetails({
   sale,
@@ -50,41 +58,75 @@ export function SaleDetails({
               <th className="px-4 py-3 text-right">Offert</th>
               <th className="px-4 py-3 text-right">Prix unitaire</th>
               <th className="px-4 py-3 text-right">Sous-total</th>
+              <th className="px-4 py-3">Raison</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {sale.cartDetails.map((detail) => (
-              <tr key={detail.id}>
-                <td className="px-4 py-4">
-                  <p className="font-bold text-slate-950">
-                    {detail.product.name}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {detail.product.reference}
-                    {detail.specialOfferId ? ' · Promotion' : ''}
-                  </p>
-                </td>
-                <td className="px-4 py-4 text-slate-600">
-                  {detail.wholesale ? 'Gros' : 'Détail'}
-                </td>
-                <td className="px-4 py-4 text-right">{detail.quantity}</td>
-                <td className="px-4 py-4 text-right">
-                  {detail.freeQuantity ?? 0}
-                </td>
-                <td className="px-4 py-4 text-right">
-                  {formatPrice(detail.finalUnitPrice)}
-                </td>
-                <td className="px-4 py-4 text-right font-bold">
-                  {formatPrice(
-                    String(Number(detail.finalUnitPrice) * detail.quantity),
-                  )}
-                </td>
-              </tr>
-            ))}
+            {sale.cartDetails.flatMap((detail) => {
+              const refundedQuantity = refundedPaidQuantity(detail)
+              const subtotal = Number(detail.finalUnitPrice) * detail.quantity
+
+              return [
+                <tr key={detail.id}>
+                  <td className="px-4 py-4">
+                    <p className="font-bold text-slate-950">
+                      {detail.product.name}
+                      {isStandaloneFreeProduct(detail) ? ' (offert)' : ''}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {detail.product.reference}
+                      {detail.specialOfferId ? ' · Promotion' : ''}
+                    </p>
+                  </td>
+                  <td className="px-4 py-4 text-slate-600">
+                    {detail.wholesale ? 'Gros' : 'Détail'}
+                  </td>
+                  <td className="px-4 py-4 text-right">{detail.quantity}</td>
+                  <td className="px-4 py-4 text-right">
+                    {detail.freeQuantity ?? 0}
+                  </td>
+                  <td className="px-4 py-4 text-right">
+                    {formatPrice(detail.finalUnitPrice)}
+                  </td>
+                  <td className="px-4 py-4 text-right font-bold">
+                    {formatPrice(subtotal)}
+                  </td>
+                  <td className="px-4 py-4 text-xs text-slate-600">-</td>
+                </tr>,
+                ...(refundedQuantity > 0
+                  ? [
+                      <tr
+                        key={`${detail.id}-refund`}
+                        className="bg-red-50/70 text-red-700"
+                      >
+                        <td className="px-4 py-4 font-semibold">
+                          {detail.product.name} (remboursé)
+                        </td>
+                        <td className="px-4 py-4">-</td>
+                        <td className="px-4 py-4 text-right">
+                          {refundedQuantity}
+                        </td>
+                        <td className="px-4 py-4 text-right">-</td>
+                        <td className="px-4 py-4 text-right">
+                          {formatPrice(-Number(detail.finalUnitPrice))}
+                        </td>
+                        <td className="px-4 py-4 text-right font-bold">
+                          {formatPrice(
+                            -Number(detail.finalUnitPrice) * refundedQuantity,
+                          )}
+                        </td>
+                        <td className="px-4 py-4 text-xs">
+                          {detail.reason ?? '-'}
+                        </td>
+                      </tr>,
+                    ]
+                  : []),
+              ]
+            })}
           </tbody>
           <tfoot className="bg-slate-50">
             <tr>
-              <td colSpan={5} className="px-4 py-4 text-right font-bold">
+              <td colSpan={6} className="px-4 py-4 text-right font-bold">
                 Total
               </td>
               <td className="px-4 py-4 text-right text-lg font-bold text-teal-800">

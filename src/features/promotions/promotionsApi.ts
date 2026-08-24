@@ -20,12 +20,14 @@ export interface SpecialOffer {
   freeQuantity: number | null
   type: SpecialOfferType
   productIds: number[]
+  productIdOffer: number | null
   limitDate: string | null
   isLocked: boolean
 }
 
 export interface SpecialOfferPayload {
   productIds: number[]
+  productIdOffer?: number
   label: string
   startDateTime: string
   endDateTime: string

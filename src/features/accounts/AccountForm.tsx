@@ -1,6 +1,7 @@
 import { useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
 import type { UserRole } from '../../auth/authApi'
 import { TextField } from '../../components/TextField'
+import { AppIcon } from '../../components/AppIcon'
 import {
   getPermissionCodes,
   getRolePermissionCodes,
@@ -203,12 +204,13 @@ export function AccountForm({
           >
             Rôle
           </label>
+          <span className="relative block">
           <select
             id="account-role"
             name="role"
             value={values.role}
             onChange={handleRoleChange}
-            className="block w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-100"
+            className="block w-full appearance-none rounded-lg border border-slate-200 bg-white px-4 py-3 pr-10 text-slate-900 shadow-sm outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-100"
           >
             {roles.map((role) => (
               <option key={role.id} value={role.label}>
@@ -216,6 +218,11 @@ export function AccountForm({
               </option>
             ))}
           </select>
+          <AppIcon
+            name="chevron-down"
+            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
+          />
+          </span>
         </div>
       </div>
 

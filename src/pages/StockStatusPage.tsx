@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type ChangeEvent } from 'react'
 import { Alert } from '../components/Alert'
 import { Pagination } from '../components/Pagination'
 import { TabularExportButton } from '../components/TabularExportButton'
@@ -6,6 +6,8 @@ import { StockSummaryTable } from '../features/stocks/StockSummaryTable'
 import {
   listAllStockSummary,
   listStockSummary,
+  createStockLimit,
+  getStockLimit,
   type ListStockSummaryParams,
   type PaginatedStockSummary,
   type StockSummary,
@@ -37,9 +39,14 @@ export function StockStatusPage() {
     createPaginationMeta(PAGE_SIZE),
   )
   const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [isSavingLimit, setIsSavingLimit] = useState<boolean>(false)
   const [errorMessage, setErrorMessage] = useState<string>('')
+  const [expiresBefore, setExpiresBefore] = useState<string>('')
+  const [stockLimit, setStockLimit] = useState<number>(15)
+  const [limitDraft, setLimitDraft] = useState<string>('15')
   const {
     page,
+    setPage,
     search,
     sortBy,
     sortOrder,
@@ -57,10 +64,68 @@ export function StockStatusPage() {
       page,
       limit: PAGE_SIZE,
       search,
+      expiresBefore: expiresBefore || undefined,
       sortBy,
       order: sortOrder,
     })
-  }, [page, search, sortBy, sortOrder])
+  }, [expiresBefore, page, search, sortBy, sortOrder])
+
+  useEffect(() => {
+    let isActive = true
+
+    void getStockLimit()
+      .then((limit) => {
+        if (isActive) {
+          setStockLimit(limit.value)
+          setLimitDraft(String(limit.value))
+        }
+      })
+      .catch((error: unknown) => {
+        if (isActive) {
+          setErrorMessage(
+            error instanceof Error
+              ? error.message
+              : 'Impossible de charger le seuil de stock.',
+          )
+        }
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [])
+
+  function handleExpiresBeforeChange(event: ChangeEvent<HTMLInputElement>): void {
+    setIsLoading(true)
+    setExpiresBefore(event.target.value)
+    setPage(1)
+  }
+
+  async function handleSaveStockLimit(): Promise<void> {
+    const nextLimit = Number(limitDraft)
+
+    if (!Number.isInteger(nextLimit) || nextLimit < 0) {
+      setErrorMessage('Le seuil doit être un nombre entier positif ou nul.')
+      return
+    }
+
+    setIsSavingLimit(true)
+    setErrorMessage('')
+
+    try {
+      const savedLimit = await createStockLimit(nextLimit)
+      setStockLimit(savedLimit.value)
+      setLimitDraft(String(savedLimit.value))
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'Impossible de mettre à jour le seuil de stock.',
+      )
+    } finally {
+      setIsSavingLimit(false)
+    }
+  }
 
   useEffect(() => {
     let isActive = true
@@ -101,7 +166,7 @@ export function StockStatusPage() {
             Stock
           </p>
           <h1 className="mt-2 text-3xl font-bold text-slate-950">
-            État du stock
+            État de stock
           </h1>
           <p className="mt-2 text-sm text-slate-500">
             Quantités disponibles par produit et détail de chaque lot.
@@ -114,28 +179,63 @@ export function StockStatusPage() {
           fileNamePrefix="etat-stock"
           isLoading={isLoading}
           loadAllRows={() =>
-            listAllStockSummary({ search, sortBy, order: sortOrder })
+            listAllStockSummary({
+              search,
+              expiresBefore: expiresBefore || undefined,
+              sortBy,
+              order: sortOrder,
+            })
           }
         />
       </div>
 
       {errorMessage ? <Alert type="error" message={errorMessage} /> : null}
 
-      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex flex-wrap items-end gap-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <label
           htmlFor="stock-summary-search"
           className="block text-sm font-medium text-slate-700"
         >
           Rechercher un produit
-        </label>
-        <input
+          <input
           id="stock-summary-search"
           type="search"
           value={search}
           onChange={handleSearchChange}
           placeholder="Nom ou référence"
-          className="mt-2 block w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-600 focus:ring-4 focus:ring-teal-100 sm:w-[42rem]"
-        />
+          className="mt-2 block w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-teal-600 focus:ring-4 focus:ring-teal-100 sm:w-64"
+          />
+        </label>
+        <label className="block text-sm font-medium text-slate-700">
+          Expire avant le
+          <input
+            type="date"
+            value={expiresBefore}
+            onChange={handleExpiresBeforeChange}
+            className="mt-2 block w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-100 sm:w-44"
+          />
+        </label>
+        <label className="block text-sm font-medium text-slate-700">
+          Seuil minimum
+          <span className="mt-2 flex gap-2">
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value={limitDraft}
+              onChange={(event) => setLimitDraft(event.target.value)}
+              className="block w-24 rounded-lg border border-slate-200 bg-white px-3 py-3 text-slate-900 shadow-sm outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-100"
+            />
+            <button
+              type="button"
+              onClick={() => void handleSaveStockLimit()}
+              disabled={isSavingLimit || limitDraft === String(stockLimit)}
+              className="rounded-lg bg-teal-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-teal-300"
+            >
+              {isSavingLimit ? 'Enregistrement...' : 'Mettre à jour'}
+            </button>
+          </span>
+        </label>
       </div>
 
       <StockSummaryTable
@@ -144,6 +244,7 @@ export function StockStatusPage() {
         sortBy={sortBy}
         sortOrder={sortOrder}
         onSort={handleSort}
+        dangerThreshold={stockLimit + 5}
       />
 
       {meta.totalPages > 1 ? (
