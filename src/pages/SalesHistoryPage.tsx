@@ -216,10 +216,7 @@ export function SalesHistoryPage({ user }: { user: AuthenticatedUser }) {
         isLoading={isLoading}
         onSelect={setSelectedSale}
         renderActions={(sale) => {
-          if (
-            sale.status === 'PAID' ||
-            sale.status === 'PARTIALLY_REFUNDED'
-          ) {
+          if (sale.status === 'PAID') {
             return (
               <button
                 type="button"
