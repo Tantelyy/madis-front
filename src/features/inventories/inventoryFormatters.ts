@@ -19,6 +19,7 @@ export const INVENTORY_MOVEMENT_TYPE_OPTIONS: readonly {
   { value: 'INCOMING', label: 'Entrée' },
   { value: 'ADJUSTMENT', label: 'Ajustement' },
   { value: 'SALE', label: 'Vente' },
+  { value: 'PROMOTION_GIFT', label: 'Produit offert par promotion' },
   { value: 'REFUND', label: 'Remboursement' },
   { value: 'CANCELLATION', label: 'Annulation' },
 ]
