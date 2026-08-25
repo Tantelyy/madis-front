@@ -11,6 +11,7 @@ export type InventoryMovementType =
   | 'INCOMING'
   | 'ADJUSTMENT'
   | 'SALE'
+  | 'PROMOTION_GIFT'
   | 'REFUND'
   | 'CANCELLATION'
 

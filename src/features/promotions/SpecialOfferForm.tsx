@@ -27,7 +27,7 @@ interface SpecialOfferFormProps {
 }
 
 interface FormValues {
-  productId: string
+  productIds: string[]
   productIdOffer: string
   label: string
   startDateTime: string
@@ -46,7 +46,7 @@ function toDateTimeInput(value: string | undefined): string {
 
 function initialValues(offer?: SpecialOffer): FormValues {
   return {
-    productId: offer?.productIds[0] ? String(offer.productIds[0]) : '',
+    productIds: offer?.productIds.map(String) ?? [],
     productIdOffer: offer?.productIdOffer ? String(offer.productIdOffer) : '',
     label: offer?.label ?? '',
     startDateTime: toDateTimeInput(offer?.startDateTime),
@@ -95,25 +95,39 @@ export function SpecialOfferForm({
     setSelectionError('')
   }
 
-  function setProductValue(
-    field: 'productId' | 'productIdOffer',
-    value: string,
-  ): void {
+  function setProductValue(field: 'productIdOffer', value: string): void {
     setValues((currentValues) => ({ ...currentValues, [field]: value }))
+    setSelectionError('')
+  }
+
+  function togglePromotionProduct(productId: string): void {
+    setValues((currentValues) => ({
+      ...currentValues,
+      productIds: currentValues.productIds.includes(productId)
+        ? currentValues.productIds.filter((id) => id !== productId)
+        : [...currentValues.productIds, productId],
+    }))
     setSelectionError('')
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
-    const productId = Number(values.productId)
+    const productIds = values.productIds.map(Number)
 
-    if (!Number.isInteger(productId) || productId <= 0) {
-      setSelectionError('Sélectionnez le produit concerné par la promotion.')
+    if (
+      productIds.length === 0 ||
+      productIds.some(
+        (productId) => !Number.isInteger(productId) || productId <= 0,
+      )
+    ) {
+      setSelectionError(
+        'Sélectionnez au moins un produit concerné par la promotion.',
+      )
       return
     }
 
     const payload: SpecialOfferPayload = {
-      productIds: [productId],
+      productIds,
       label: values.label,
       startDateTime: new Date(values.startDateTime).toISOString(),
       endDateTime: new Date(values.endDateTime).toISOString(),
@@ -157,14 +171,10 @@ export function SpecialOfferForm({
 
   return (
     <form className="space-y-5" onSubmit={handleSubmit}>
-      <SearchableSelectField
-        id="special-offer-product"
-        label="Produit concerné"
-        value={values.productId}
+      <PromotionProductMultiSelect
+        selectedProductIds={values.productIds}
         options={productOptions}
-        placeholder="Rechercher un produit par nom ou référence"
-        required
-        onValueChange={(value) => setProductValue('productId', value)}
+        onToggle={togglePromotionProduct}
       />
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -307,13 +317,98 @@ export function SpecialOfferForm({
         </button>
         <button
           type="submit"
-          disabled={isSubmitting || !values.productId}
+          disabled={isSubmitting || values.productIds.length === 0}
           className="rounded-lg bg-teal-700 px-4 py-3 font-semibold text-white disabled:bg-teal-300"
         >
           {isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
         </button>
       </div>
     </form>
+  )
+}
+
+function PromotionProductMultiSelect({
+  selectedProductIds,
+  options,
+  onToggle,
+}: {
+  selectedProductIds: readonly string[]
+  options: readonly SearchableSelectOption[]
+  onToggle: (productId: string) => void
+}) {
+  const [search, setSearch] = useState<string>('')
+  const normalizedSearch = search.trim().toLocaleLowerCase('fr')
+  const visibleOptions = normalizedSearch
+    ? options.filter((option) =>
+        option.label.toLocaleLowerCase('fr').includes(normalizedSearch),
+      )
+    : options
+  const selectedOptions = options.filter((option) =>
+    selectedProductIds.includes(String(option.id)),
+  )
+
+  return (
+    <div className="space-y-2">
+      <label
+        htmlFor="special-offer-products"
+        className="block text-sm font-medium text-slate-700"
+      >
+        Produits concernés par la promotion *
+      </label>
+      <input
+        id="special-offer-products"
+        type="search"
+        value={search}
+        onChange={(event) => setSearch(event.target.value)}
+        placeholder="Rechercher un produit par nom ou référence"
+        className="block w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-100"
+      />
+      <div className="max-h-52 overflow-y-auto rounded-lg border border-slate-200 bg-white">
+        {visibleOptions.length === 0 ? (
+          <p className="px-4 py-3 text-sm text-slate-500">
+            Aucun produit trouvé.
+          </p>
+        ) : (
+          visibleOptions.map((option) => {
+            const productId = String(option.id)
+
+            return (
+              <label
+                key={option.id}
+                className="flex cursor-pointer items-center gap-3 border-b border-slate-100 px-4 py-3 text-sm text-slate-700 last:border-0 hover:bg-teal-50"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedProductIds.includes(productId)}
+                  onChange={() => onToggle(productId)}
+                  className="h-4 w-4 accent-teal-700"
+                />
+                <span>{option.label}</span>
+              </label>
+            )
+          })
+        )}
+      </div>
+      <p className="text-xs font-medium text-slate-500">
+        {selectedOptions.length} produit
+        {selectedOptions.length > 1 ? 's' : ''} sélectionné
+        {selectedOptions.length > 1 ? 's' : ''}
+      </p>
+      {selectedOptions.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {selectedOptions.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => onToggle(String(option.id))}
+              className="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-800 hover:bg-teal-100"
+            >
+              {option.label} ×
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
   )
 }
 
