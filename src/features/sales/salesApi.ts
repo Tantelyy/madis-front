@@ -77,6 +77,8 @@ export interface Sale {
   updatedAt: string
   status: CartStatus
   validatedBy: number | null
+  validatedAt: string | null
+  paidAt: string | null
   totalPrice: string
   customerName: string | null
   customerContact: string | null
