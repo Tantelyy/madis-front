@@ -3,6 +3,10 @@ export interface DisplayUser {
   email: string
 }
 
+const QUANTITY_FORMATTER = new Intl.NumberFormat('fr-FR', {
+  maximumFractionDigits: 2,
+})
+
 export function formatDateTime(value: string | null): string {
   if (!value) {
     return '-'
@@ -30,6 +34,10 @@ export function formatPrice(value: string | number | null): string {
   }
 
   return `${new Intl.NumberFormat('fr-FR').format(Number(value))} Ar`
+}
+
+export function formatQuantity(value: number): string {
+  return QUANTITY_FORMATTER.format(value)
 }
 
 export function displayValue(value: string | null | undefined): string {

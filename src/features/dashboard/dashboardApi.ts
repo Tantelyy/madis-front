@@ -55,6 +55,27 @@ export interface SalesStockParams {
   productTypeId?: number
 }
 
+export type ForecastStatus =
+  | 'SUFFICIENT_STOCK'
+  | 'STOCKOUT_EXPECTED'
+  | 'OUT_OF_STOCK'
+
+export interface ProductForecast {
+  productId: number
+  productName: string
+  productReference: string
+  productTypeId: number
+  productType: string
+  asOfDate: string
+  forecastDays: number
+  currentStock: number
+  totalPredictedDemand: number
+  remainingStockAfterHorizon: number
+  status: ForecastStatus
+  predictedStockoutDate: string | null
+  daysUntilStockout: number | null
+}
+
 export interface StockValueByProductType {
   productTypeId: number
   productType: string
@@ -102,6 +123,15 @@ export function getStockFinancialValue(
   signal?: AbortSignal,
 ): Promise<StockFinancialValue> {
   return requestJson<StockFinancialValue>('/dashboard/stock-value', { signal })
+}
+
+export function getProductForecast(
+  productId: number,
+  signal?: AbortSignal,
+): Promise<ProductForecast> {
+  return requestJson<ProductForecast>(`/dashboard/forecasts/${productId}`, {
+    signal,
+  })
 }
 
 function createPeriodSearchParams(period: DashboardPeriod): URLSearchParams {
