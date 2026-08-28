@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Alert } from '../../components/Alert'
 import { Pagination } from '../../components/Pagination'
+import { formatQuantity } from '../../utils/displayFormatters'
 import { listProductTypes, type ProductType } from '../products/productsApi'
+import { ProductForecastModal } from './ProductForecastModal'
 import {
   getSalesStockAnalysis,
   type SalesStockAnalysis,
@@ -21,11 +23,39 @@ const STOCK_DATE_FORMATTER = new Intl.DateTimeFormat('fr-FR', {
   month: 'long',
   year: 'numeric',
 })
-const QUANTITY_FORMATTER = new Intl.NumberFormat('fr-FR')
 
 export function SalesStockAnalysisSection() {
-  const [activeFilter, setActiveFilter] =
-    useState<DashboardFilter>('MONTH')
+  const [selectedProduct, setSelectedProduct] = useState<SalesStockItem | null>(
+    null,
+  )
+
+  return (
+    <section className="space-y-5 border-t border-slate-200 pt-7">
+      <div>
+        <h2 className="text-2xl font-bold text-slate-950">
+          Analyse croisée des produits vendus et du stock
+        </h2>
+        <p className="mt-2 text-sm text-slate-500">
+          Comparez les quantités vendues sur une période au stock disponible aujourd’hui.
+        </p>
+      </div>
+      <CurrentSalesStockAnalysis onForecastRequest={setSelectedProduct} />
+      {selectedProduct ? (
+        <ProductForecastModal
+          product={selectedProduct}
+          onClose={() => setSelectedProduct(null)}
+        />
+      ) : null}
+    </section>
+  )
+}
+
+function CurrentSalesStockAnalysis({
+  onForecastRequest,
+}: {
+  onForecastRequest: (product: SalesStockItem) => void
+}) {
+  const [activeFilter, setActiveFilter] = useState<DashboardFilter>('MONTH')
   const [period, setPeriod] = useState<DashboardPeriod>(() =>
     createPresetPeriod('MONTH'),
   )
@@ -34,19 +64,15 @@ export function SalesStockAnalysisSection() {
   const [page, setPage] = useState<number>(1)
   const [analysis, setAnalysis] = useState<SalesStockAnalysis | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(true)
-  const [analysisErrorMessage, setAnalysisErrorMessage] =
-    useState<string>('')
+  const [analysisErrorMessage, setAnalysisErrorMessage] = useState<string>('')
   const [productTypesErrorMessage, setProductTypesErrorMessage] =
     useState<string>('')
 
   useEffect(() => {
     let isActive = true
-
     void listProductTypes()
       .then((types) => {
-        if (isActive) {
-          setProductTypes(types)
-        }
+        if (isActive) setProductTypes(types)
       })
       .catch((error: unknown) => {
         if (isActive) {
@@ -57,7 +83,6 @@ export function SalesStockAnalysisSection() {
           )
         }
       })
-
     return () => {
       isActive = false
     }
@@ -66,7 +91,6 @@ export function SalesStockAnalysisSection() {
   useEffect(() => {
     const controller = new AbortController()
     let isActive = true
-
     void getSalesStockAnalysis(
       {
         period,
@@ -77,9 +101,7 @@ export function SalesStockAnalysisSection() {
       controller.signal,
     )
       .then((response) => {
-        if (isActive) {
-          setAnalysis(response)
-        }
+        if (isActive) setAnalysis(response)
       })
       .catch((error: unknown) => {
         if (
@@ -94,16 +116,19 @@ export function SalesStockAnalysisSection() {
         }
       })
       .finally(() => {
-        if (isActive) {
-          setIsLoading(false)
-        }
+        if (isActive) setIsLoading(false)
       })
-
     return () => {
       isActive = false
       controller.abort()
     }
   }, [page, period, productTypeId])
+
+  function prepareAnalysisChange(): void {
+    setIsLoading(true)
+    setAnalysisErrorMessage('')
+    setAnalysis(null)
+  }
 
   function changePeriod(
     filter: DashboardFilter,
@@ -126,31 +151,14 @@ export function SalesStockAnalysisSection() {
     setPage(nextPage)
   }
 
-  function prepareAnalysisChange(): void {
-    setIsLoading(true)
-    setAnalysisErrorMessage('')
-    setAnalysis(null)
-  }
-
   return (
-    <section className="space-y-5 border-t border-slate-200 pt-7">
-      <div>
-        <h2 className="text-2xl font-bold text-slate-950">
-          Analyse croisée des produits vendus et du stock
-        </h2>
-        <p className="mt-2 text-sm text-slate-500">
-          Comparez les quantités vendues sur une période au stock disponible
-          aujourd’hui.
-        </p>
-      </div>
-
+    <div className="space-y-5">
       <DashboardPeriodFilter
         activeFilter={activeFilter}
         period={period}
         onChange={changePeriod}
         ariaLabel="Filtrer la période de l'analyse des ventes et du stock"
       />
-
       <div className="w-fit max-w-full">
         <label
           htmlFor="sales-stock-product-type"
@@ -186,14 +194,12 @@ export function SalesStockAnalysisSection() {
           </svg>
         </div>
       </div>
-
       {productTypesErrorMessage ? (
         <Alert type="error" message={productTypesErrorMessage} />
       ) : null}
       {analysisErrorMessage ? (
         <Alert type="error" message={analysisErrorMessage} />
       ) : null}
-
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <AnalysisHeader
           activeFilter={activeFilter}
@@ -201,9 +207,12 @@ export function SalesStockAnalysisSection() {
           analysis={analysis}
           isLoading={isLoading}
         />
-        <SalesStockTable analysis={analysis} isLoading={isLoading} />
+        <SalesStockTable
+          analysis={analysis}
+          isLoading={isLoading}
+          onForecastRequest={onForecastRequest}
+        />
       </div>
-
       {analysis && analysis.meta.totalPages > 1 ? (
         <Pagination
           currentPage={analysis.meta.page}
@@ -211,15 +220,8 @@ export function SalesStockAnalysisSection() {
           onPageChange={changePage}
         />
       ) : null}
-    </section>
+    </div>
   )
-}
-
-interface AnalysisHeaderProps {
-  activeFilter: DashboardFilter
-  period: DashboardPeriod
-  analysis: SalesStockAnalysis | null
-  isLoading: boolean
 }
 
 function AnalysisHeader({
@@ -227,12 +229,16 @@ function AnalysisHeader({
   period,
   analysis,
   isLoading,
-}: AnalysisHeaderProps) {
+}: {
+  activeFilter: DashboardFilter
+  period: DashboardPeriod
+  analysis: SalesStockAnalysis | null
+  isLoading: boolean
+}) {
   const stockDate = analysis
     ? STOCK_DATE_FORMATTER.format(new Date(analysis.stockAsOf))
     : null
   const productCount = analysis?.meta.total ?? 0
-
   return (
     <div className="flex flex-col gap-2 px-5 pb-3 pt-5 sm:flex-row sm:items-end sm:justify-between sm:px-6">
       <div>
@@ -247,7 +253,7 @@ function AnalysisHeader({
       <p className="text-sm text-slate-500">
         {isLoading && !analysis
           ? 'Chargement...'
-          : `${QUANTITY_FORMATTER.format(productCount)} produit${productCount > 1 ? 's' : ''}`}
+          : `${formatQuantity(productCount)} produit${productCount > 1 ? 's' : ''}`}
       </p>
     </div>
   )
@@ -256,22 +262,23 @@ function AnalysisHeader({
 function SalesStockTable({
   analysis,
   isLoading,
+  onForecastRequest,
 }: {
   analysis: SalesStockAnalysis | null
   isLoading: boolean
+  onForecastRequest: (product: SalesStockItem) => void
 }) {
   return (
     <div className="overflow-x-auto px-5 pb-5 sm:px-6">
-      <table className="w-full min-w-[820px] border-collapse text-sm">
+      <table className="w-full min-w-[960px] border-collapse text-sm">
         <thead>
           <tr className="border-b border-slate-200 text-left text-slate-700">
             <th className="py-3 pr-4 font-semibold">Produit</th>
             <th className="px-4 py-3 font-semibold">Type de produit</th>
             <th className="px-4 py-3 text-right font-semibold">Vendus</th>
-            <th className="px-4 py-3 text-right font-semibold">
-              Stock actuel
-            </th>
-            <th className="py-3 pl-4 font-semibold">Comparaison</th>
+            <th className="px-4 py-3 text-right font-semibold">Stock actuel</th>
+            <th className="px-4 py-3 font-semibold">Comparaison</th>
+            <th className="py-3 pl-4 font-semibold">Prévision</th>
           </tr>
         </thead>
         <tbody>
@@ -285,6 +292,7 @@ function SalesStockTable({
                 key={item.productId}
                 item={item}
                 maximumQuantity={analysis.maximumQuantity}
+                onForecastRequest={onForecastRequest}
               />
             ))
           )}
@@ -297,9 +305,11 @@ function SalesStockTable({
 function SalesStockRow({
   item,
   maximumQuantity,
+  onForecastRequest,
 }: {
   item: SalesStockItem
   maximumQuantity: number
+  onForecastRequest: (product: SalesStockItem) => void
 }) {
   return (
     <tr className="border-b border-slate-100 text-slate-700 last:border-0">
@@ -308,34 +318,26 @@ function SalesStockRow({
       </td>
       <td className="px-4 py-3">{item.productType}</td>
       <td className="px-4 py-3 text-right tabular-nums">
-        {QUANTITY_FORMATTER.format(item.soldQuantity)}
+        {formatQuantity(item.soldQuantity)}
       </td>
       <td className="px-4 py-3 text-right tabular-nums">
-        {QUANTITY_FORMATTER.format(item.currentStock)}
+        {formatQuantity(item.currentStock)}
+      </td>
+      <td className="px-4 py-3">
+        <QuantityBar label="Vendus" value={item.soldQuantity} maximum={maximumQuantity} colorClassName="bg-blue-500" />
+        <QuantityBar label="Stock" value={item.currentStock} maximum={maximumQuantity} colorClassName="bg-emerald-500" />
       </td>
       <td className="py-3 pl-4">
-        <QuantityBar
-          label="Vendus"
-          value={item.soldQuantity}
-          maximum={maximumQuantity}
-          colorClassName="bg-blue-500"
-        />
-        <QuantityBar
-          label="Stock"
-          value={item.currentStock}
-          maximum={maximumQuantity}
-          colorClassName="bg-emerald-500"
-        />
+        <button
+          type="button"
+          onClick={() => onForecastRequest(item)}
+          className="rounded-lg border border-teal-600 px-3 py-2 text-sm font-semibold text-teal-700 transition hover:bg-teal-50"
+        >
+          Voir la prévision
+        </button>
       </td>
     </tr>
   )
-}
-
-interface QuantityBarProps {
-  label: string
-  value: number
-  maximum: number
-  colorClassName: string
 }
 
 function QuantityBar({
@@ -343,24 +345,25 @@ function QuantityBar({
   value,
   maximum,
   colorClassName,
-}: QuantityBarProps) {
+}: {
+  label: string
+  value: number
+  maximum: number
+  colorClassName: string
+}) {
   const width = value === 0 ? 0 : Math.max(2, (value / maximum) * 100)
-
   return (
     <div className="flex min-w-64 items-center gap-3 py-0.5">
       <span className="w-12 shrink-0 text-xs text-slate-400">{label}</span>
       <div
         className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200"
         role="meter"
-        aria-label={`${label} : ${QUANTITY_FORMATTER.format(value)}`}
+        aria-label={`${label} : ${formatQuantity(value)}`}
         aria-valuemin={0}
         aria-valuemax={maximum}
         aria-valuenow={value}
       >
-        <div
-          className={`h-full rounded-full ${colorClassName}`}
-          style={{ width: `${width}%` }}
-        />
+        <div className={`h-full rounded-full ${colorClassName}`} style={{ width: `${width}%` }} />
       </div>
     </div>
   )
@@ -369,7 +372,7 @@ function QuantityBar({
 function EmptyRow({ message }: { message: string }) {
   return (
     <tr>
-      <td colSpan={5} className="py-10 text-center text-slate-500">
+      <td colSpan={6} className="py-10 text-center text-slate-500">
         {message}
       </td>
     </tr>
