@@ -1,121 +1,222 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import {
+  canAccessBackoffice,
+  canManageAccounts,
+  canManageInventory,
+  canSell,
+  canViewDashboard,
+  canViewStock,
+  getHomePath,
+} from './auth/accessControl'
+import { logout, type AuthenticatedUser } from './auth/authApi'
+import {
+  canRoleUseCurrentDevice,
+  DESKTOP_ONLY_ACCESS_MESSAGE,
+} from './auth/deviceAccess'
+import { storeLoginRedirectMessage } from './auth/loginRedirect'
+import {
+  clearStoredUser,
+  readStoredUser,
+  storeUser,
+} from './auth/sessionStorage'
+import { AppLayout } from './components/AppLayout'
+import { SalesCartProvider } from './features/sales/SalesCartContext'
+import { AccountsPage } from './pages/AccountsPage'
+import { DashboardPage } from './pages/DashboardPage'
+import { InventoryMovementsPage } from './pages/InventoryMovementsPage'
+import { InventoriesPage } from './pages/InventoriesPage'
+import { LoginPage } from './pages/LoginPage'
+import { PendingSalesPage } from './pages/PendingSalesPage'
+import { ProductReferentialsPage } from './pages/ProductReferentialsPage'
+import { PricingGridPage } from './pages/PricingGridPage'
+import { ProductsPage } from './pages/ProductsPage'
+import { PromotionsPage } from './pages/PromotionsPage'
+import { SalesPage } from './pages/SalesPage'
+import { SalesHistoryPage } from './pages/SalesHistoryPage'
+import { SellerApprovedSalesPage } from './pages/SellerApprovedSalesPage'
+import { SuppliersPage } from './pages/SuppliersPage'
+import { StockStatusPage } from './pages/StockStatusPage'
+import { AdminRoute } from './routes/AdminRoute'
+
+function readInitialUser(): AuthenticatedUser | null {
+  const storedUser = readStoredUser()
+
+  if (storedUser && !canRoleUseCurrentDevice(storedUser.role)) {
+    clearStoredUser()
+    storeLoginRedirectMessage(DESKTOP_ONLY_ACCESS_MESSAGE)
+    return null
+  }
+
+  return storedUser
+}
 
 function App() {
-  const [count, setCount] = useState(0)
+  const navigate = useNavigate()
+  const [currentUser, setCurrentUser] =
+    useState<AuthenticatedUser | null>(readInitialUser)
+
+  function handleLoginSuccess(user: AuthenticatedUser): void {
+    if (canAccessBackoffice(user)) {
+      storeUser(user)
+      setCurrentUser(user)
+      navigate(getHomePath(user), { replace: true })
+      return
+    }
+
+    clearStoredUser()
+    setCurrentUser(null)
+  }
+
+  async function handleLogout(): Promise<void> {
+    try {
+      await logout()
+    } finally {
+      clearStoredUser()
+      setCurrentUser(null)
+      navigate('/login', { replace: true })
+    }
+  }
+
+  const homePath = getHomePath(currentUser)
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
+    <Routes>
+      <Route path="/" element={<Navigate to={homePath} replace />} />
+      <Route
+        path="/login"
+        element={
+          canAccessBackoffice(currentUser) ? (
+            <Navigate to={homePath} replace />
+          ) : (
+            <LoginPage onLoginSuccess={handleLoginSuccess} />
+          )
+        }
+      />
+      <Route element={<AdminRoute user={currentUser} />}>
+        <Route
+          element={
+            <SalesCartProvider>
+              <AppLayout
+                user={currentUser}
+                onLogout={() => {
+                  void handleLogout()
+                }}
+              />
+            </SalesCartProvider>
+          }
         >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+          <Route
+            path="/dashboard"
+            element={
+              canViewDashboard(currentUser) ? (
+                <DashboardPage />
+              ) : (
+                <Navigate to={homePath} replace />
+              )
+            }
+          />
+          <Route path="/suppliers" element={<SuppliersPage />} />
+          <Route path="/products" element={<ProductsPage />} />
+          <Route
+            path="/sales"
+            element={
+              canSell(currentUser) && currentUser ? (
+                <SalesPage user={currentUser} />
+              ) : (
+                <Navigate to={homePath} replace />
+              )
+            }
+          />
+          <Route
+            path="/sales/history"
+            element={
+              canSell(currentUser) && currentUser ? (
+                <SalesHistoryPage user={currentUser} />
+              ) : (
+                <Navigate to={homePath} replace />
+              )
+            }
+          />
+          <Route
+            path="/sales/pending"
+            element={
+              currentUser?.role === 'ADMIN' ? (
+                <PendingSalesPage />
+              ) : (
+                <Navigate to="/sales" replace />
+              )
+            }
+          />
+          <Route
+            path="/sales/approvals"
+            element={
+              currentUser?.role === 'SELLER' ? (
+                <SellerApprovedSalesPage />
+              ) : (
+                <Navigate to="/sales" replace />
+              )
+            }
+          />
+          <Route
+            path="/promotions"
+            element={
+              canSell(currentUser) ? (
+                <PromotionsPage />
+              ) : (
+                <Navigate to={homePath} replace />
+              )
+            }
+          />
+          <Route
+            path="/inventories"
+            element={
+              canManageInventory(currentUser) ? (
+                <InventoriesPage />
+              ) : (
+                <Navigate to={homePath} replace />
+              )
+            }
+          />
+          <Route
+            path="/inventory-movements"
+            element={
+              canManageInventory(currentUser) ? (
+                <InventoryMovementsPage />
+              ) : (
+                <Navigate to={homePath} replace />
+              )
+            }
+          />
+          <Route
+            path="/stock-status"
+            element={
+              canViewStock(currentUser) ? (
+                <StockStatusPage />
+              ) : (
+                <Navigate to={homePath} replace />
+              )
+            }
+          />
+          <Route
+            path="/product-referentials"
+            element={<ProductReferentialsPage />}
+          />
+          <Route path="/pricing-grid" element={<PricingGridPage />} />
+          <Route
+            path="/accounts"
+            element={
+              canManageAccounts(currentUser) ? (
+                <AccountsPage currentUserId={currentUser?.id ?? null} />
+              ) : (
+                <Navigate to={homePath} replace />
+              )
+            }
+          />
+        </Route>
+      </Route>
+      <Route path="*" element={<Navigate to={homePath} replace />} />
+    </Routes>
   )
 }
 

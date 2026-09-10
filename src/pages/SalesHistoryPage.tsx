@@ -1,0 +1,293 @@
+import { useState, type ChangeEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
+import type { AuthenticatedUser } from '../auth/authApi'
+import { Alert } from '../components/Alert'
+import { AppIcon } from '../components/AppIcon'
+import { DateRangeFilter } from '../components/DateRangeFilter'
+import { Pagination } from '../components/Pagination'
+import { TabularExportButton } from '../components/TabularExportButton'
+import { InventoryModal } from '../features/inventories/InventoryModal'
+import { SaleDetails } from '../features/sales/SaleDetails'
+import { SaleListTable } from '../features/sales/SaleListTable'
+import {
+  SaleReversalModal,
+  type SaleReversalKind,
+} from '../features/sales/SaleReversalModal'
+import {
+  listAllSales,
+  type CartStatus,
+  type Sale,
+} from '../features/sales/salesApi'
+import { useSalesList } from '../features/sales/useSalesList'
+import { useDateRangeFilter } from '../hooks/useDateRangeFilter'
+import {
+  formatPaymentMethod,
+  formatSaleStatus,
+} from '../features/sales/saleDisplay'
+import {
+  displayValue,
+  formatDateTime,
+  formatPrice,
+} from '../utils/displayFormatters'
+import { formatPdfAriary, type ExportColumn } from '../utils/tabularExport'
+
+const PAGE_SIZE = 10
+
+const SALE_EXPORT_COLUMNS: readonly ExportColumn<Sale>[] = [
+  { header: 'Vente', value: (sale) => sale.id, width: 1 },
+  { header: 'Date', value: (sale) => formatDateTime(sale.createdAt), width: 2 },
+  {
+    header: 'Client',
+    value: (sale) => displayValue(sale.customerName),
+    width: 2,
+  },
+  {
+    header: 'Contact',
+    value: (sale) => displayValue(sale.customerContact),
+    width: 2,
+  },
+  {
+    header: 'Vendeur',
+    value: (sale) => displayValue(sale.seller?.userName),
+    width: 2,
+  },
+  {
+    header: 'Statut',
+    value: (sale) => formatSaleStatus(sale.status),
+    width: 1,
+  },
+  {
+    header: 'Paiement',
+    value: (sale) => formatPaymentMethod(sale.paymentMethod),
+    width: 1,
+  },
+  {
+    header: 'Total (Ariary)',
+    value: (sale) => formatPrice(sale.totalPrice),
+    pdfValue: (sale) => formatPdfAriary(sale.totalPrice),
+    width: 2,
+  },
+]
+interface ReversalState {
+  sale: Sale
+  kind: SaleReversalKind
+}
+
+export function SalesHistoryPage({ user }: { user: AuthenticatedUser }) {
+  const navigate = useNavigate()
+  const dateRange = useDateRangeFilter()
+  const [status, setStatus] = useState<CartStatus | undefined>(undefined)
+  const [selectedSale, setSelectedSale] = useState<Sale | null>(null)
+  const [reversalState, setReversalState] = useState<ReversalState | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string>('')
+  const {
+    sales,
+    meta,
+    search,
+    isLoading,
+    errorMessage,
+    setPage,
+    setSearch,
+    setIsLoading,
+    refresh,
+  } = useSalesList(status, PAGE_SIZE, false, dateRange)
+
+  function handleSearch(event: ChangeEvent<HTMLInputElement>): void {
+    setIsLoading(true)
+    setSearch(event.target.value)
+    setPage(1)
+  }
+
+  function handleDateChange(
+    updateDate: (value: string) => void,
+    value: string,
+  ): void {
+    setIsLoading(true)
+    updateDate(value)
+    setPage(1)
+  }
+
+  function handleClearDates(): void {
+    setIsLoading(true)
+    dateRange.clearDateRange()
+    setPage(1)
+  }
+
+  return (
+    <section className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-wide text-teal-700">
+            Ventes
+          </p>
+          <h1 className="mt-2 text-3xl font-bold text-slate-950">
+            Historique des ventes
+          </h1>
+          <p className="mt-2 text-sm text-slate-500">
+            {user.role === 'ADMIN'
+              ? 'Toutes les ventes enregistrées dans le système.'
+              : 'Vos ventes enregistrées dans le système.'}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <TabularExportButton
+            currentRows={sales}
+            columns={SALE_EXPORT_COLUMNS}
+            title="Historique des ventes"
+            fileNamePrefix="historique-ventes"
+            isLoading={isLoading}
+            loadAllRows={() =>
+              listAllSales({
+                search,
+                status,
+                startDate: dateRange.startDate,
+                endDate: dateRange.endDate,
+              })
+            }
+          />
+          <button
+            type="button"
+            onClick={() => navigate('/sales')}
+            className="rounded-lg border border-slate-200 bg-white px-4 py-3 font-semibold text-teal-700 hover:bg-teal-50"
+          >
+            Retour à la vente
+          </button>
+        </div>
+      </div>
+
+      {errorMessage ? <Alert type="error" message={errorMessage} /> : null}
+      {successMessage ? (
+        <Alert type="success" message={successMessage} />
+      ) : null}
+
+      <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-wrap gap-4">
+          <input
+          type="search"
+          value={search}
+          onChange={handleSearch}
+          aria-label="Rechercher une vente"
+          placeholder="Client, contact ou vendeur"
+          className="w-full rounded-lg border border-slate-200 px-4 py-3 outline-none focus:border-teal-600 focus:ring-4 focus:ring-teal-100 md:w-72"
+        />
+          <span className="relative block">
+          <select
+          value={status ?? ''}
+          onChange={(event) => {
+            setIsLoading(true)
+            setStatus(
+              (event.target.value || undefined) as CartStatus | undefined,
+            )
+            setPage(1)
+          }}
+          aria-label="Filtrer par statut"
+          className="w-full appearance-none rounded-lg border border-slate-200 px-4 py-3 pr-10 md:w-48"
+        >
+          <option value="">Tous les statuts</option>
+          <option value="PENDING">En attente</option>
+          <option value="VALIDATED">Validée</option>
+          <option value="PAID">Payée</option>
+          <option value="REFUNDED">Remboursée</option>
+          <option value="CANCELLED">Annulée</option>
+          <option value="PARTIALLY_REFUNDED">Partiellement remboursée</option>
+          </select>
+          <AppIcon
+            name="chevron-down"
+            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
+          />
+          </span>
+        </div>
+        <DateRangeFilter
+          idPrefix="sales"
+          startDate={dateRange.startDate}
+          endDate={dateRange.endDate}
+          onStartDateChange={(value) =>
+            handleDateChange(dateRange.setStartDate, value)
+          }
+          onEndDateChange={(value) =>
+            handleDateChange(dateRange.setEndDate, value)
+          }
+          onClear={handleClearDates}
+        />
+      </div>
+
+      <SaleListTable
+        sales={sales}
+        isLoading={isLoading}
+        onSelect={setSelectedSale}
+        renderActions={(sale) => {
+          if (sale.status === 'PAID') {
+            return (
+              <button
+                type="button"
+                onClick={() => {
+                  setSuccessMessage('')
+                  setReversalState({ sale, kind: 'REFUND' })
+                }}
+                className="rounded-lg border border-violet-200 px-3 py-2 font-semibold text-violet-700 hover:bg-violet-50"
+              >
+                Rembourser
+              </button>
+            )
+          }
+
+          if (sale.status === 'VALIDATED') {
+            return (
+              <button
+                type="button"
+                onClick={() => {
+                  setSuccessMessage('')
+                  setReversalState({ sale, kind: 'CANCEL' })
+                }}
+                className="rounded-lg border border-red-200 px-3 py-2 font-semibold text-red-700 hover:bg-red-50"
+              >
+                Annuler
+              </button>
+            )
+          }
+
+          return null
+        }}
+      />
+
+      {meta.totalPages > 1 ? (
+        <Pagination
+          currentPage={meta.page}
+          totalPages={meta.totalPages}
+          onPageChange={(nextPage) => {
+            setIsLoading(true)
+            setPage(nextPage)
+          }}
+        />
+      ) : null}
+
+      {selectedSale ? (
+        <InventoryModal
+          title={`Détail de la vente n°${selectedSale.id}`}
+          onClose={() => setSelectedSale(null)}
+          size="xl"
+        >
+          <SaleDetails sale={selectedSale} />
+        </InventoryModal>
+      ) : null}
+
+      {reversalState ? (
+        <SaleReversalModal
+          sale={reversalState.sale}
+          kind={reversalState.kind}
+          onClose={() => setReversalState(null)}
+          onCompleted={async (sale) => {
+            setSuccessMessage(
+              sale.status === 'PARTIALLY_REFUNDED'
+                ? `Vente n°${sale.id} partiellement remboursée avec succès.`
+                : sale.status === 'REFUNDED'
+                ? `Vente n°${sale.id} remboursée avec succès.`
+                : `Vente n°${sale.id} annulée avec succès.`,
+            )
+            await refresh()
+          }}
+        />
+      ) : null}
+    </section>
+  )
+}
