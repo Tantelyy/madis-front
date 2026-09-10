@@ -132,7 +132,7 @@ export function DashboardPage() {
         <p className="text-sm font-semibold uppercase tracking-wide text-teal-700">
           Accueil
         </p>
-        <h1 className="mt-2 text-3xl font-bold text-slate-950">Dashboard</h1>
+        <h1 className="mt-2 text-3xl font-bold text-slate-950">Tableau de bord</h1>
       </div>
 
       <div>

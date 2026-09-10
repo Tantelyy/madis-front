@@ -31,7 +31,7 @@ interface AppLayoutProps {
 
 const navigationItems: readonly NavigationItem[] = [
   {
-    label: 'Dashboard',
+    label: 'Tableau de bord',
     path: '/dashboard',
     icon: 'dashboard',
     canAccess: canViewDashboard,
