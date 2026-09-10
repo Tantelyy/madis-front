@@ -1,73 +1,97 @@
-# React + TypeScript + Vite
+# MADIS — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interface web de **MADIS (Ma Distribution)**, une application de gestion
+commerciale et de suivi des stocks. Elle permet aux administrateurs, vendeurs
+et gestionnaires de stock d'accéder aux fonctionnalités correspondant à leurs
+rôles et permissions.
 
-Currently, two official plugins are available:
+## Fonctionnalités
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Connexion et navigation adaptées aux droits de l'utilisateur.
+- Gestion des fournisseurs, produits et référentiels.
+- Consultation des stocks, lots et mouvements d'inventaire.
+- Grilles tarifaires et promotions.
+- Panier de vente, validation, paiement, historique et remboursements.
+- Consultation et téléchargement des factures.
+- Tableaux de bord, indicateurs commerciaux et affichage des prévisions.
+- Gestion des comptes et outils d'import/export selon les écrans.
 
-## React Compiler
+## Technologies et organisation
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Le projet utilise **React, TypeScript, Vite, React Router et Tailwind CSS**.
+Les tests unitaires utilisent Vitest et le lint repose sur ESLint.
 
-## Expanding the ESLint configuration
+- `src/pages/` : écrans de l'application.
+- `src/features/` : composants et appels API regroupés par fonctionnalité.
+- `src/auth/` : session, connexion et règles d'accès.
+- `src/components/` : composants d'interface partagés.
+- `src/utils/` : utilitaires et client HTTP.
+- `public/` : ressources statiques et identité visuelle.
+- `nginx.conf` : service des fichiers compilés et proxy API en production.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Le frontend appelle le [backend NestJS](https://github.com/Tantelyy/madis-back).
+Il n'accède directement ni à PostgreSQL ni au
+[service ML](https://github.com/Tantelyy/madis-fastAPI). Les autorisations métier
+sont également contrôlées par le backend.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Développement local
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Prérequis : Node.js 22.12 ou supérieur dans la branche 22, npm et le backend
+configuré et démarré. Exécuter les commandes depuis la racine de ce dépôt.
+Sous PowerShell, utiliser `npm.cmd` si les scripts `.ps1` sont bloqués.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm ci
+cp .env.example .env
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Sous PowerShell, utiliser `Copy-Item .env.example .env` pour la copie.
+Conserver le fichier existant si le projet est déjà configuré.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Le fichier [.env.example](.env.example) fournit les paramètres locaux :
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```dotenv
+VITE_BACKEND_URL=http://localhost:3000
+VITE_MADIS_LOGO_PATH=/branding/madis-logo.png
+VITE_MADIS_SLOGAN="SMART CHOICE, BETTER LIFE"
 ```
+
+Démarrer l'interface :
+
+```bash
+npm run dev
+```
+
+Ouvrir l'adresse affichée par Vite, généralement `http://localhost:5173`.
+Cette origine doit être autorisée dans `FRONTEND_URL` côté backend.
+Les comptes sont créés dans le backend ; le premier administrateur provient
+de son seed.
+
+Les variables `VITE_*` sont intégrées au code envoyé au navigateur :
+elles ne doivent contenir aucun secret.
+
+## Vérifications
+
+```bash
+npm test
+npm run lint
+npm run build
+```
+
+Le build génère les fichiers dans `dist/`. `npm run preview` permet de
+prévisualiser ce build localement.
+
+## CI/CD et déploiement
+
+La CI exécute tests, lint et build sur les pull requests et les branches
+`dev` et `main`, puis vérifie l'image frontend et la configuration Nginx.
+Un push sur `main` publie `ghcr.io/tantelyy/madis-front`. Le CD met à jour
+le frontend sur Contabo lorsque `DEPLOY_ENABLED=true`.
+
+En production, une seule image contient le frontend compilé et Nginx.
+Le build utilise `VITE_BACKEND_URL=/api` : Nginx sert React et transmet
+`/api/*` au backend privé. L'URL HTTPS publique est fournie par ngrok.
+
+Consulter le **[guide de déploiement Contabo](https://github.com/Tantelyy/madis-back/blob/main/deploy/README.md)**,
+centralisé dans le dépôt backend. Il décrit la configuration commune aux trois
+applications et les étapes du premier déploiement.
